@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "simplebar-react/dist/simplebar.min.css";
+
+/*
+ * Theme tokens — one fixed dark theme, neutral by default. Rebrand a project
+ * by changing the values in :root only; every component reads these through
+ * the semantic utilities (bg-background, text-primary, border-border, ...),
+ * never raw colors, so nothing else needs touching. If you're about to add a
+ * `dark:` variant anywhere, reference a token below instead.
+ *
+ * background, muted, card, popover, secondary form an elevation ladder (each
+ * one step lighter than the last). The *-foreground tokens are text on that
+ * surface; muted-foreground is the dimmer secondary text.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Elevation ladder — page background at the bottom, secondary buttons at the top. */
+  --background: #0a0a0a;
+  --muted: #141414;
+  --card: #161616;
+  --popover: #27272a;
+  --border: #7474834f;
+  --secondary: #1c1c1e;
+
+  --foreground: #ffffff;
+  --card-foreground: #ffffff;
+  --popover-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted-foreground: #71717a;
+
+  /* The one brand color: buttons, focus rings, progress, links. Swap per project. */
+  --primary: #5b6cf0;
+  --primary-foreground: #ffffff;
+  --ring: #2a3170;
+
+  /* Hover/active surface for menu items. */
+  --accent: #1a1d33;
+  --accent-foreground: #ffffff;
+
+  --destructive: #b4323f;
+  --destructive-foreground: #ffffff;
+
+  --success: #2f8c5a;
+  --success-foreground: #ffffff;
+  --warning: #c08a1e;
+  --warning-foreground: #0a0a0a;
+
+  --input: #242426;
+
+  /* Chart ramp, light-to-dark steps of the primary hue. */
+  --chart-1: #2a3170;
+  --chart-2: #3a46a3;
+  --chart-3: #5b6cf0;
+  --chart-4: #8b97f5;
+  --chart-5: #bcc3fa;
+
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
