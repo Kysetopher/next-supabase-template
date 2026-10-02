@@ -7,3 +7,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Docs
+
+All project documentation lives in [docs/](docs/DOCS.md) — start there.
+
+- [docs/DOCS.md](docs/DOCS.md) — how documentation in this repo is organized
+- [docs/PROJECT.md](docs/PROJECT.md) — what this project is: stack, routes, layout, scripts, starting a new project
+- [docs/PRACTICES.md](docs/PRACTICES.md) — coding conventions: components, styling, data and security, testing
+- [docs/AUTH.md](docs/AUTH.md) — server-only Supabase Auth: proxy, `requireUser()`, every flow, rate limits, dashboard settings
+- [docs/STRIPE.md](docs/STRIPE.md) — optional Stripe billing: products, checkout, webhook, billing tables, fulfilment
+- [docs/SKILLS.md](docs/SKILLS.md) — agent skills in `.claude/skills/`: new table, new page, new component

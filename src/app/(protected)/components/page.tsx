@@ -13,6 +13,8 @@ const SECTIONS = [
   { id: "navigation", title: "Navigation" },
   { id: "layout", title: "Layout" },
   { id: "motion", title: "Motion" },
+  { id: "calendar", title: "Calendar" },
+  { id: "billing", title: "Billing" },
 ];
 
 /** Living gallery of src/components/ui — one representative example of every component. */

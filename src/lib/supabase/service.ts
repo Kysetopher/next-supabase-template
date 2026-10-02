@@ -15,6 +15,11 @@ import { env } from "@/lib/env";
  *  - deleting the caller's own auth.users row (deleteAccount() in
  *    src/lib/actions/account.ts), which Supabase's Admin API only allows with
  *    the secret key.
+ *  - optional Stripe billing (src/lib/billing/*, docs/STRIPE.md): the
+ *    webhook mirroring Stripe into billing_customers/subscriptions/payments
+ *    (Stripe calls it, so there's no user session), and
+ *    getOrCreateStripeCustomer() storing a new customer id — tables users
+ *    can read but never write.
  *
  * Do NOT use it to read or write user data on behalf of a request — Server
  * Components, Server Actions and Route Handlers use src/lib/supabase/server.ts

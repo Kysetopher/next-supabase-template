@@ -1,9 +1,12 @@
 @AGENTS.md
 
-## Project notes
+# Docs
 
-- Unbranded template: never hard-code a product name — use `site` from `src/lib/site.ts`; colors only via the tokens in `src/app/globals.css`.
-- Auth is server-only. Read [docs/AUTH.md](docs/AUTH.md) before touching `src/proxy.ts`, `src/lib/supabase/*`, `src/lib/actions/*` or `src/lib/auth/*`.
-- `requireUser()` / `db()` in every page and action that touches user data; never `getSession()` for authorization; never import `createServiceClient()` into request-facing data code.
-- URL-driven messages go through `src/lib/url-messages.ts` codes — never render `?error=` text directly.
-- UI components live in `src/components/ui` (kebab-case, `cn` from `@/lib/utils`). Extend existing ones additively; check `/components` renders after changes.
+All project documentation lives in [docs/](docs/DOCS.md) — start there.
+
+- [docs/DOCS.md](docs/DOCS.md) — how documentation in this repo is organized
+- [docs/PROJECT.md](docs/PROJECT.md) — what this project is: stack, routes, layout, scripts, starting a new project
+- [docs/PRACTICES.md](docs/PRACTICES.md) — coding conventions: components, styling, data and security, testing
+- [docs/AUTH.md](docs/AUTH.md) — server-only Supabase Auth: proxy, `requireUser()`, every flow, rate limits, dashboard settings
+- [docs/STRIPE.md](docs/STRIPE.md) — optional Stripe billing: products, checkout, webhook, billing tables, fulfilment
+- [docs/SKILLS.md](docs/SKILLS.md) — agent skills in `.claude/skills/`: new table, new page, new component

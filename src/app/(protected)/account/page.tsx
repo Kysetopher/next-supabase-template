@@ -6,6 +6,63 @@ import { InputField } from "@/components/ui/input-field";
 import { PasswordInputField } from "@/components/ui/password-input-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { errorMessage, noticeMessage } from "@/lib/url-messages";
+import { isBillingEnabled } from "@/lib/env";
+import { getDefaultPaymentMethod, getStripeCustomerId, type PaymentMethodSummary } from "@/lib/billing/customers";
+import { getCurrentSubscription, type SubscriptionRow } from "@/lib/billing/subscriptions";
+import { getProduct } from "@/lib/billing/products";
+import { formatDate } from "@/lib/billing/format";
+import { ManageBillingButton } from "@/components/billing/manage-billing-button";
+import { PaymentMethodCard } from "@/components/billing/payment-method-card";
+
+type Supabase = Awaited<ReturnType<typeof db>>["supabase"];
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  past_due: "Payment overdue — update your card under Manage billing",
+};
+
+/**
+ * Billing data for the account page. The subscription comes from our
+ * mirror (RLS-scoped); the card is read live from Stripe, so a Stripe outage
+ * shows "couldn't load" here instead of breaking the whole page.
+ */
+async function loadBilling(supabase: Supabase, userId: string) {
+  const [subscription, customerId] = await Promise.all([
+    getCurrentSubscription(supabase, userId),
+    getStripeCustomerId(supabase, userId),
+  ]);
+  let card: PaymentMethodSummary | null = null;
+  let cardFailed = false;
+  if (customerId) {
+    try {
+      card = await getDefaultPaymentMethod(customerId);
+    } catch (error) {
+      console.error("account: payment method lookup failed", userId, error);
+      cardFailed = true;
+    }
+  }
+  return { subscription, customerId, card, cardFailed };
+}
+
+function SubscriptionSummary({ subscription }: { subscription: SubscriptionRow | null }) {
+  if (!subscription) {
+    return <p className="text-sm text-muted-foreground">No active subscription.</p>;
+  }
+  const name = getProduct(subscription.product_key)?.name ?? "Subscription";
+  const periodEnd = formatDate(subscription.current_period_end);
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <p className="font-medium">{name}</p>
+      <p className={subscription.status === "active" ? "text-muted-foreground" : "text-destructive"}>
+        {STATUS_LABELS[subscription.status] ?? subscription.status}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {subscription.cancel_at_period_end ? `Ends ${periodEnd}` : `Renews ${periodEnd}`} · current period started{" "}
+        {formatDate(subscription.current_period_start)}
+      </p>
+    </div>
+  );
+}
 
 export const metadata = {
   title: "Account",
@@ -26,6 +83,10 @@ export default async function AccountPage({
   // otherwise the current one is asked for (confirmIdentity() in
   // src/lib/actions/account.ts).
   const needsCurrentPassword = !(await hasFreshEmailSignIn(supabase));
+
+  // Only with Stripe configured (docs/STRIPE.md); otherwise the section and
+  // its queries don't exist.
+  const billing = isBillingEnabled() ? await loadBilling(supabase, user.id) : null;
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -91,6 +152,19 @@ export default async function AccountPage({
             </form>
           ) : null}
         </div>
+
+        {billing ? (
+          <div className="flex flex-col gap-3">
+            <h2 className="text-sm font-medium text-muted-foreground">Billing</h2>
+            <SubscriptionSummary subscription={billing.subscription} />
+            {billing.cardFailed ? (
+              <p className="text-sm text-muted-foreground">Couldn&apos;t load your saved card right now.</p>
+            ) : billing.customerId ? (
+              <PaymentMethodCard value={billing.card} />
+            ) : null}
+            {billing.customerId ? <ManageBillingButton className="self-start" /> : null}
+          </div>
+        ) : null}
 
         <form action={logout}>
           <SubmitButton variant="secondary">Log out</SubmitButton>

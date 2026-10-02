@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/supabase/db";
-import { env } from "@/lib/env";
+import { env, isBillingEnabled } from "@/lib/env";
+import { deleteStripeCustomer, getStripeCustomerId } from "@/lib/billing/customers";
 import { createServiceClient } from "@/lib/supabase/service";
 import { checkBurst } from "@/lib/rate-limit/burst";
 import { allowEmailSend, normalizeEmail } from "@/lib/auth/email-limits";
@@ -164,6 +165,25 @@ export async function deleteAccount(formData: FormData) {
   // with no account left to reach them by.
   if (!(await deleteUserFiles(service, "avatars", user.id))) {
     redirect(`/account?${errorParam("delete_failed")}`);
+  }
+
+  // The Stripe customer doesn't cascade either. Deleting it cancels their
+  // subscriptions at once, so nothing is charged after the account is gone.
+  // Already gone ("resource_missing", e.g. a retried deletion) counts as
+  // done; any other failure blocks the delete, like the files above. Only
+  // checked with billing on — turning billing off after customers exist
+  // means deleting them in Stripe yourself (docs/STRIPE.md).
+  if (isBillingEnabled()) {
+    let customerId: string | null;
+    try {
+      customerId = await getStripeCustomerId(service, user.id);
+    } catch (error) {
+      console.error("deleteAccount: billing customer lookup failed", user.id, error);
+      redirect(`/account?${errorParam("delete_failed")}`);
+    }
+    if (customerId && !(await deleteStripeCustomer(customerId))) {
+      redirect(`/account?${errorParam("delete_failed")}`);
+    }
   }
 
   const { error: deleteError } = await service.auth.admin.deleteUser(user.id);

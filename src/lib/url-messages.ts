@@ -35,6 +35,12 @@ const ERRORS = {
   email_unchanged: "That's already your email.",
   email_change_failed: "Could not change to that email. It may already belong to another account.",
   email_link_other_browser: "We couldn't finish the email change in this browser. Open the link in the browser you're signed in on, or log in to see whether it went through.",
+  billing_unavailable: "Billing isn't available right now.",
+  billing_no_customer: "There's nothing to manage yet — billing details appear after your first purchase.",
+  billing_portal_failed: "Could not open billing. Please try again.",
+  invalid_product: "That product isn't available.",
+  saved_card_failed: "Your saved card couldn't be charged. Confirm or enter a card below.",
+  payment_failed: "Could not complete the payment. Please try again.",
 } as const;
 
 const NOTICES = {

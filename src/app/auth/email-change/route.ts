@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { isBillingEnabled } from "@/lib/env";
+import { syncStripeCustomerEmail } from "@/lib/billing/customers";
 import { createClient } from "@/lib/supabase/server";
 import { errorParam } from "@/lib/url-messages";
 
@@ -36,8 +38,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?${errorParam("email_link_other_browser")}`);
   }
 
-  // Sync the new address anywhere else it's stored (e.g. a billing
-  // customer) here, before redirecting.
+  // Sync the new address anywhere else it's stored, before redirecting.
+  // Best effort: the change already happened, so failures are only logged.
+  if (isBillingEnabled()) {
+    await syncStripeCustomerEmail(supabase, data.user.id, data.user.email);
+  }
 
   return NextResponse.redirect(`${origin}/account?message=email_changed`);
 }

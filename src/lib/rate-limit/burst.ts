@@ -16,6 +16,8 @@ import "server-only";
 const POLICIES = {
   /** Signup, login, reset-code sends and guesses, re-auth. 5 / 60s. */
   auth: { limit: 5, windowMs: 60_000 },
+  /** Opening the billing portal, one-click purchases. 10 / 60s per user. */
+  billing: { limit: 10, windowMs: 60_000 },
 } as const;
 
 export type BurstPolicy = keyof typeof POLICIES;

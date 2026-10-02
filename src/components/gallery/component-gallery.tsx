@@ -4,6 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 
+import { ManageBillingButton } from "@/components/billing/manage-billing-button";
+import { PaymentMethodCard } from "@/components/billing/payment-method-card";
+import { CalendarView } from "@/components/calendar/calendar-view";
+import { EventCard } from "@/components/calendar/event-card";
+import { UpcomingSidebar } from "@/components/calendar/upcoming-sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BackButton } from "@/components/ui/back-button";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +139,7 @@ import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/comp
 import { WidgetCard, WidgetCardFallback } from "@/components/ui/widget-card";
 import { YearPicker } from "@/components/ui/year-picker";
 import { YouTubeEmbed } from "@/components/ui/youtube-embed";
+import type { CalendarCategories, CalendarEvent } from "@/lib/calendar/types";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -201,6 +207,53 @@ const TAG_OPTIONS: TagSelectOption[] = [
 
 const FRUITS = ["Apple", "Banana", "Cherry", "Date", "Elderberry", "Fig", "Grape", "Honeydew", "Kiwi", "Lemon"];
 
+// Calendar samples, all relative to SAMPLE_DATE in local wall-clock time so SSR and CSR place them identically.
+const at = (dayOffset: number, hour = 0, minute = 0) =>
+  new Date(SAMPLE_DATE.getFullYear(), SAMPLE_DATE.getMonth(), SAMPLE_DATE.getDate() + dayOffset, hour, minute);
+
+const CALENDAR_CATEGORIES: CalendarCategories = {
+  meeting: { label: "Meeting", color: "primary" },
+  deadline: { label: "Deadline", color: "destructive" },
+  social: { label: "Social", color: "success" },
+  focus: { label: "Focus time", color: "chart-4" },
+  travel: { label: "Travel", color: "warning" },
+};
+
+const CALENDAR_EVENTS: CalendarEvent[] = [
+  { id: "standup", title: "Team standup", start: at(0, 9, 30), end: at(0, 9, 45), category: "meeting", location: "Room 2" },
+  {
+    id: "review",
+    title: "Design review",
+    start: at(0, 10),
+    end: at(0, 11, 30),
+    category: "meeting",
+    description: "Walk through the new onboarding flow and agree on next steps.",
+    url: "/dashboard",
+    urlLabel: "Open dashboard",
+  },
+  { id: "one-on-one", title: "1:1", start: at(0, 10, 30), end: at(0, 11), category: "meeting" },
+  { id: "lunch", title: "Team lunch", start: at(0, 12, 30), end: at(0, 13, 30), category: "social", location: "Courtyard" },
+  { id: "focus", title: "Deep work", start: at(0, 14), end: at(0, 16), category: "focus" },
+  { id: "report", title: "Quarterly report due", start: at(0), allDay: true, category: "deadline" },
+  {
+    id: "conference",
+    title: "Conference",
+    start: at(5),
+    end: at(8),
+    allDay: true,
+    category: "travel",
+    description: "Three days of talks and workshops.",
+    url: "https://example.com",
+  },
+  { id: "planning", title: "Sprint planning", start: at(4, 9), end: at(4, 10, 30), category: "meeting" },
+  { id: "retro", title: "Retrospective", start: at(1, 15), end: at(1, 16), category: "meeting" },
+  { id: "launch", title: "Release cut-off", start: at(11, 17), end: at(11, 17, 30), category: "deadline" },
+  { id: "offsite", title: "Team offsite", start: at(-6, 10), end: at(-6, 17), category: "social" },
+  { id: "kickoff", title: "Project kickoff", start: at(-10, 11), end: at(-10, 12), category: "meeting" },
+  { id: "late", title: "On-call handover", start: at(2, 22), end: at(3, 1), color: "chart-2" },
+  { id: "next-month", title: "Budget review", start: at(21, 13), end: at(21, 14), category: "meeting" },
+];
+
 /* ------------------------------------------------------------------ */
 /* Layout helpers                                                      */
 /* ------------------------------------------------------------------ */
@@ -213,6 +266,8 @@ const GALLERY_SECTIONS = [
   { id: "navigation", title: "Navigation" },
   { id: "layout", title: "Layout" },
   { id: "motion", title: "Motion" },
+  { id: "calendar", title: "Calendar" },
+  { id: "billing", title: "Billing" },
 ] as const;
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
@@ -1087,6 +1142,79 @@ function MotionSection() {
   );
 }
 
+function BillingSection() {
+  return (
+    <Section id="billing" title="Billing">
+      <Demo name="payment-method-card">
+        <PaymentMethodCard value={{ brand: "visa", last4: "4242", expMonth: 12, expYear: 2034 }} />
+      </Demo>
+      <Demo name="payment-method-card (expired / empty)">
+        <PaymentMethodCard value={{ brand: "mastercard", last4: "4444", expMonth: 1, expYear: 2020 }} />
+        <PaymentMethodCard value={null} />
+      </Demo>
+      <Demo name="manage-billing-button">
+        <Row>
+          <ManageBillingButton />
+        </Row>
+        <p className="text-xs text-muted-foreground">
+          Opens Stripe&apos;s Customer Portal. With billing off it returns to /account with a notice.
+        </p>
+      </Demo>
+      <Demo name="checkout-form / pay-with-saved-card-button">
+        <p className="text-sm text-muted-foreground">
+          Both need a live Stripe session, so they render on their real pages: the checkout form on{" "}
+          <code className="font-mono">/checkout?product=&lt;key&gt;</code>, and the one-click button from a Server Component
+          for a one-time product (it mints a fresh idempotency nonce per render). See docs/STRIPE.md.
+        </p>
+      </Demo>
+    </Section>
+  );
+}
+
+function CalendarSection() {
+  const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+  const [lastAction, setLastAction] = React.useState("Click a day, a time slot or an event.");
+
+  return (
+    <Section id="calendar" title="Calendar">
+      <Demo name="calendar-view (month / week / day + upcoming)" wide>
+        <CalendarView
+          events={CALENDAR_EVENTS}
+          categories={CALENDAR_CATEGORIES}
+          today={SAMPLE_DATE}
+          defaultDate={SAMPLE_DATE}
+          selectedDate={selectedDate}
+          onSelectDate={(date, view) => {
+            setSelectedDate(date);
+            setLastAction(`Selected ${view === "month" ? date.toDateString() : date.toLocaleString()} (${view})`);
+          }}
+          onSelectEvent={(event) => setLastAction(`Opened "${event.title}"`)}
+          weekStartsOn={1}
+          className="h-[44rem]"
+        />
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {lastAction}
+        </p>
+      </Demo>
+
+      <Demo name="event-card">
+        <EventCard event={CALENDAR_EVENTS[1]} categories={CALENDAR_CATEGORIES} showMedia />
+      </Demo>
+
+      <Demo name="upcoming-sidebar">
+        <UpcomingSidebar
+          events={CALENDAR_EVENTS}
+          now={SAMPLE_DATE}
+          categories={CALENDAR_CATEGORIES}
+          limit={6}
+          onSelectEvent={(event) => setLastAction(`Opened "${event.title}"`)}
+          className="h-80"
+        />
+      </Demo>
+    </Section>
+  );
+}
+
 /** Every component in src/components/ui, grouped by purpose, for eyeballing the library. */
 export function ComponentGallery() {
   return (
@@ -1100,6 +1228,8 @@ export function ComponentGallery() {
           <NavigationSection />
           <LayoutSection />
           <MotionSection />
+          <CalendarSection />
+          <BillingSection />
         </div>
       </PopupMessageProvider>
     </TooltipProvider>

@@ -2,6 +2,8 @@
 
 An unbranded starting point: Next.js 16 (App Router) + TypeScript + Tailwind v4, with a complete server-side Supabase Auth shell and a shared UI component library.
 
+All documentation lives in [docs/](docs/DOCS.md): [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [SKILLS](docs/SKILLS.md).
+
 ## What's in it
 
 - **Auth** (see [docs/AUTH.md](docs/AUTH.md)): sign up with email confirmation (PKCE), log in, forgot/reset password by 6-digit code, change email, change password, delete account, log out. Session refresh in `src/proxy.ts`, `requireUser()` as the real gate, per-email Postgres rate limits that fail closed.
