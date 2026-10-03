@@ -68,7 +68,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe \
   --events customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,payment_intent.succeeded,charge.refunded,charge.dispute.created,charge.dispute.closed
 ```
 
-It prints a `whsec_…` secret. Put that in `STRIPE_WEBHOOK_SECRET` and restart `npm run dev`. `/api/*` is outside the proxy's matcher (`src/proxy.ts`), so the webhook is never redirected to `/login`.
+It prints a `whsec_…` secret. Put that in `STRIPE_WEBHOOK_SECRET` and restart `npm run dev`. `/api/*` is outside the middleware's matcher (`src/middleware.ts`), so the webhook is never redirected to `/login`.
 
 ## How it flows
 

@@ -1,8 +1,19 @@
 # Agent skills
 
-Project-level skills live in `.claude/skills/` (committed), so any Claude
-Code session opened in this repo — and every project created from the
-template — gets them.
+Skills are committed in the repo, so every clone — and every project made
+from the template — has them with nothing to install:
+
+- `.claude/skills/` — read by **Claude Code**. The project's own skills are edited here.
+- `.agents/skills/` — read by **Codex** and other agents that use the shared folder. A mirror: run `npm run skills:sync` after adding or editing a project skill (`scripts/sync-skills.mjs`).
+
+[SETUP.md](SETUP.md) step 3 has the agent confirm they're in place for whichever agent is running.
+
+**Project rules come first.** Where an installed skill disagrees with this
+project's docs, follow the project. Notably, the `supabase` skill describes a
+local-database workflow (`supabase db pull --local`, iterating on the schema
+with `execute_sql`); this project has no local database and changes the schema
+only through hand-written migration files ([PRACTICES.md](PRACTICES.md), the
+`new-table` skill).
 
 ## This project's skills (written here)
 
@@ -14,20 +25,28 @@ the same change that changes it.
 | skill | covers |
 |---|---|
 | `new-table` | a schema change: `npm run db:new`, the profiles RLS pattern (one policy per operation on `(select auth.uid())`, narrow grants, cascade from `auth.users`), storage buckets, account-deletion cleanup for what doesn't cascade, `db:push` to the dev project + `db:types`, security advisors, production push after merge |
-| `new-page` | a protected page (still `requireUser()` in the page, sidebar link, robots, smoke test), a public page (`PUBLIC_ROUTES` in `src/proxy.ts`), an API route (own auth check, JSON 401, webhook signature from the raw body), `?error=` / `?message=` codes |
+| `new-page` | a protected page (still `requireUser()` in the page, sidebar link, robots, smoke test), a public page (`PUBLIC_ROUTES` in `src/middleware.ts`), an API route (own auth check, JSON 401, webhook signature from the raw body), `?error=` / `?message=` codes |
 | `new-component` | a component in `src/components/ui` or a feature module: extend before adding, tokens only, client/server boundary, accessibility, hydration-safe dates, the `/components` gallery entry, recapturing the docs-site gallery screenshots |
 
-## Recommended installed sets
+## Installed sets
 
-Not installed by default — add them when a project needs them, from their
-official sources, and list them here when you do (pin them in
-`skills-lock.json`).
+Installed from their official sources with the `skills` CLI, copied into both
+folders, and pinned in `skills-lock.json`:
 
-| set | install | covers |
+| set | skills | covers |
 |---|---|---|
-| Supabase agent skills (official) | `npx skills add supabase/agent-skills -a claude-code -y --copy` | Postgres/RLS best practices, Supabase CLI and local development, edge functions — recommended by Supabase for agent-driven work on a Supabase project |
+| Supabase (`supabase/agent-skills`) | `supabase`, `supabase-postgres-best-practices` | Supabase products, SSR auth, RLS and security checks, the CLI and MCP, debugging; Postgres schema, indexes, RLS performance, locking |
 
-Update installed sets with `npx skills update -p` from the repo root.
+Install command (also restores a missing one):
+
+```bash
+npx skills add supabase/agent-skills -s '*' -a claude-code codex -y --copy
+```
+
+Update to the latest versions with `npx skills update -p -y`, review the
+diff, and commit it with the new `skills-lock.json`. These files are managed
+by the CLI — don't edit them by hand; put project-specific overrides in the
+docs instead.
 
 ## Writing a new skill
 
@@ -43,4 +62,4 @@ description: Use when … — what it covers, and what it is not for. The descri
 ```
 
 Keep the body a checklist that points at the docs for the reasoning, rather
-than repeating them. Add the skill to the table above.
+than repeating them. Add the skill to the table above, then run `npm run skills:sync`.

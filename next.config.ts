@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 /**
  * Sent on every response.
@@ -14,6 +15,9 @@ import type { NextConfig } from "next";
  *
  * Deliberately not a full Content-Security-Policy: it needs allow-listing for
  * whatever third parties a project adds and Next's inline scripts.
+ *
+ * Static files (`public/`, `/_next/static`) are served by Workers Assets
+ * before Next runs and never get these; `public/_headers` repeats them.
  */
 const SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
@@ -32,5 +36,10 @@ const nextConfig: NextConfig = {
     ];
   },
 };
+
+// Gives `next dev` the Cloudflare bindings from wrangler.jsonc (the rate
+// limiters), so getCloudflareContext() works locally as it does on Workers.
+// Variables still come from .env.local. See docs/CLOUDFLARE.md.
+initOpenNextCloudflareForDev();
 
 export default nextConfig;

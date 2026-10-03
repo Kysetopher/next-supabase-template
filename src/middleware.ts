@@ -3,10 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/lib/env";
 
-// Next.js 16's name for middleware. Deploying to Cloudflare Workers via
-// @opennextjs/cloudflare? That adapter doesn't support proxy.ts yet: rename
-// this file to src/middleware.ts and the function to `middleware` — the body
-// stays the same. See docs/AUTH.md.
+// middleware.ts, not Next 16's proxy.ts, on purpose: this app deploys to
+// Cloudflare Workers via @opennextjs/cloudflare, which runs middleware on the
+// edge runtime it supports. proxy.ts is Node.js-runtime only, and OpenNext
+// marks Node.js middleware on Workers as experimental and unmaintained. The
+// deprecated name still works in Next 16. Keep this file in src/, next to
+// app/ — Next only finds it there. See docs/AUTH.md.
 //
 // Inverted on purpose: an allowlist of what's PUBLIC, not a list of what's
 // protected. A protected list drifts out of sync the moment a new page is
@@ -41,7 +43,7 @@ function redirectWithCookies(url: URL, from: NextResponse) {
   return redirectResponse;
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Public pages need no auth information at all, so skip creating a
   // Supabase client and calling getUser() for them — that call is a real
   // network round trip to Supabase's Auth server, and paying it on every
@@ -108,7 +110,7 @@ export const config = {
     // and return a JSON 401 — a redirect to the /login *page* would be wrong
     // for a fetch caller expecting JSON. Their own Supabase client
     // (src/lib/supabase/server.ts) can refresh-and-write the cookie itself
-    // from a Route Handler, so skipping the proxy there doesn't lose the
+    // from a Route Handler, so skipping the middleware there doesn't lose the
     // refresh either.
     //
     // icon/apple-icon/opengraph-image/twitter-image/robots.txt/sitemap.xml

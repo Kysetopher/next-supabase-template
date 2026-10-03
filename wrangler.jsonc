@@ -1,0 +1,104 @@
+// Cloudflare Workers config, read by `wrangler deploy` (Workers Builds runs it
+// on every push), `opennextjs-cloudflare preview`, and `next dev` through
+// initOpenNextCloudflareForDev() in next.config.ts. See docs/CLOUDFLARE.md.
+//
+// The top level is PRODUCTION (`npx wrangler deploy`, from the `production`
+// branch). `env.dev` below is the dev Worker (`npx wrangler deploy --env dev`,
+// from `main`).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Rename to your project's Worker name (lowercase letters, digits, dashes).
+  // It must match the Worker's name in the Cloudflare dashboard exactly, or
+  // the Workers Builds deploy fails. The dev Worker is this name plus "-dev".
+  "name": "app",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // `workers_dev` serves the Worker at <name>.<subdomain>.workers.dev, so the
+  // first deploy is reachable before a domain exists. Set it to false once a
+  // custom domain is attached: the app should have one origin (SITE_URL), and
+  // a second one is a second address to protect and nothing in the app uses.
+  // `preview_urls` stays off: with it, every old version stays callable at
+  // <version>-<name>.<subdomain>.workers.dev, running its old code, including
+  // bugs fixed since.
+  "workers_dev": true,
+  "preview_urls": false,
+  // Declared here rather than toggled in the dashboard, because every deploy
+  // makes this file the Worker's whole configuration: a dashboard-only
+  // setting doesn't survive the next push.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  },
+  // Non-secret variables only, committed so every deploy re-applies them. A
+  // plain Variable set only in the dashboard is wiped by the next deploy,
+  // because `wrangler deploy` treats this list as complete.
+  //
+  // Secrets — SUPABASE_SECRET_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET —
+  // NEVER go here. Add them in the dashboard (Worker → Settings → Variables
+  // and Secrets) as type Secret, which deploys leave alone.
+  //
+  // Uncomment and fill in before the first deploy (docs/SETUP.md step 12):
+  // the server refuses to serve requests until the required ones are set.
+  // These are the PRODUCTION Supabase project's values, and the live Stripe
+  // ones if billing is on.
+  "vars": {
+    // "SITE_URL": "https://example.com",
+    // "SUPABASE_URL": "https://<production-ref>.supabase.co",
+    // "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_...",
+    // Billing only (docs/STRIPE.md) — the publishable key and one price per product:
+    // "STRIPE_PUBLISHABLE_KEY": "pk_live_...",
+    // "STRIPE_PRICE_PRO": "price_..."
+  },
+  // Layer 1 of rate limiting — per-minute burst limits (src/lib/rate-limit/
+  // burst.ts, docs/AUTH.md "Rate limiting is layered"). One binding per
+  // policy; the limit and period live here (the period may only be 10 or 60).
+  // Counted per Cloudflare location and eventually consistent, so they stop
+  // a script hammering an endpoint, not a determined attacker — the exact
+  // limits are in Postgres. `namespace_id` must be unique in the Cloudflare
+  // account, or two bindings silently share counters.
+  "ratelimits": [
+    { "name": "RATE_LIMIT_AUTH", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RATE_LIMIT_BILLING", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
+  ],
+  "env": {
+    // The dev Worker, on the DEVELOPMENT Supabase project (the one in your
+    // .env.local) and Stripe test mode. Wrangler doesn't inherit `vars` or
+    // bindings into an environment, so this block is complete on its own; a
+    // missing binding fails at deploy instead of falling back to production's.
+    "dev": {
+      // Same rules as the top-level `vars`: non-secret only, uncomment and
+      // fill in before the first dev deploy. Secrets go on the dev Worker
+      // (`<name>-dev`) in the dashboard, as type Secret.
+      "vars": {
+        // "SITE_URL": "https://dev.example.com",
+        // "SUPABASE_URL": "https://<development-ref>.supabase.co",
+        // "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_...",
+        // Billing only — test-mode values:
+        // "STRIPE_PUBLISHABLE_KEY": "pk_test_...",
+        // "STRIPE_PRICE_PRO": "price_..."
+      },
+      // Own counters: sharing production's namespace_ids would let dev
+      // traffic use up production's limits.
+      "ratelimits": [
+        { "name": "RATE_LIMIT_AUTH", "namespace_id": "2001", "simple": { "limit": 5, "period": 60 } },
+        { "name": "RATE_LIMIT_BILLING", "namespace_id": "2002", "simple": { "limit": 10, "period": 60 } }
+      ]
+    }
+  }
+}

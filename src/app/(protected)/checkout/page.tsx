@@ -17,8 +17,8 @@ export const metadata = {
  * `/checkout?product=<key>` — the embedded Stripe payment form for one
  * product from src/lib/billing/products.ts, subscription or one-time. Only
  * catalog keys are accepted (unknown keys 404); the price comes from Stripe.
- * 404s entirely when billing is disabled. Under (protected), so the proxy,
- * the layout and db() below all require a signed-in user.
+ * 404s entirely when billing is disabled. Under (protected), so the
+ * middleware, the layout and db() below all require a signed-in user.
  *
  * One subscription per user: anyone already on one (active or past_due) is
  * sent to /account, where the Customer Portal handles plan changes and card

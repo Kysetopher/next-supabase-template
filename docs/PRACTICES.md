@@ -27,7 +27,7 @@
 - Every page and action that touches user data calls `requireUser()` or `db()` itself — layouts don't re-run on client navigation, so never rely on the layout alone. See [AUTH.md](AUTH.md).
 - Never use `getSession()` for authorization. Never import `createServiceClient()` into request-facing data code; it bypasses RLS and is reserved for the narrow cases listed in `src/lib/supabase/service.ts`.
 - **Every table** follows the `profiles` pattern in `supabase/migrations/*_profiles_and_avatars.sql`: RLS on, one policy per allowed operation on `(select auth.uid())`, grants as narrow as the policies, `references auth.users(id) on delete cascade`. Anything outside Postgres (storage files, Stripe customers) is cleaned up in `deleteAccount()`.
-- **Schema changes are migrations** (`npm run db:new <name>`), never hand-edits to a hosted database. Run `npm run db:types` after every migration.
+- **Schema changes are migrations** (`npm run db:new <name>`), never hand-edits to a hosted database — no `execute_sql` / `supabase db query` changes, no `db pull` from a database. There is no local database: never run `supabase start`, `db reset` or Docker. Run `npm run db:types` after every migration. These rules override any installed skill that says otherwise ([SKILLS.md](SKILLS.md)).
 - Read env vars through `env` from `@/lib/env`, never `process.env.X!`. A new required variable goes in `src/lib/env.ts` (so the server refuses to start without it) and in `.env.example` with where to find it.
 - URL-driven messages (`?error=`, `?message=`) go through the fixed codes in `src/lib/url-messages.ts` — never render text taken from the URL.
 - Validate every Server Action input on the server; a Server Action can be posted from anywhere, not just its form.

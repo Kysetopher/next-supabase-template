@@ -9,8 +9,8 @@ import { refreshPayment } from "@/lib/billing/payments";
 /**
  * Stripe's servers call this, not users: it's authenticated by the
  * `stripe-signature` header (signed with STRIPE_WEBHOOK_SECRET), never a
- * session cookie. /api/* is outside the proxy's matcher (src/proxy.ts), so
- * it's never redirected to /login. See docs/STRIPE.md.
+ * session cookie. /api/* is outside the middleware's matcher
+ * (src/middleware.ts), so it's never redirected to /login. See docs/STRIPE.md.
  *
  * The only place billing rows are written. The rules:
  *

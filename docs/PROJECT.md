@@ -57,10 +57,13 @@ src/
 supabase/
   migrations/              versioned schema (auth limits, profiles + avatars, billing)
   templates/               auth email templates
-  config.toml              local Supabase stack, preconfigured for the auth flows
+  config.toml              Supabase CLI config (no local database); records the auth settings
+scripts/check-env.mjs      npm run check:env — validates .env.local without printing it
 e2e/                       Playwright smoke tests
 docs/                      all documentation — start at DOCS.md
-.claude/skills/            agent skills — SKILLS.md
+.claude/skills/            agent skills for Claude Code — SKILLS.md
+.agents/skills/            the same skills for Codex and other agents (npm run skills:sync)
+skills-lock.json           pinned versions of installed skill sets (Supabase)
 .github/workflows/ci.yml   typecheck, lint, build, smoke tests
 ```
 
@@ -71,6 +74,8 @@ docs/                      all documentation — start at DOCS.md
 | `npm run dev` | Dev server on :3000 |
 | `npm run build` / `npm run start` | Production build / serve |
 | `npm run typecheck`, `npm run lint` | TypeScript, ESLint |
+| `npm run skills:sync` | Mirrors the project's own skills from `.claude/skills` to `.agents/skills` |
+| `npm run check:env` | Validates `.env.local` the way the server does at startup, without printing values |
 | `npm run test:e2e` | Builds, then runs the Playwright smoke tests (no Supabase needed) |
 | `npm run db:new <name>` | New empty migration |
 | `npm run db:types` | Regenerate `src/lib/supabase/types.ts` from the linked project |
@@ -82,9 +87,18 @@ docs/                      all documentation — start at DOCS.md
 
 ## Starting a new project
 
-1. Create a repository from the template on GitHub (**Use this template**) and clone it.
-2. `npm install`, copy `.env.example` to `.env.local`, fill in the Supabase values.
-3. `npx supabase link --project-ref <ref>`, then `npm run db:push`.
-4. Do the Supabase dashboard settings in [AUTH.md](AUTH.md#supabase-dashboard-settings-this-depends-on).
-5. Rebrand: `src/lib/site.ts` (name), `src/app/globals.css` (`--primary` and its steps), `src/app/favicon.ico`.
-6. Replace this doc's opening with what the new project is, and add project-specific docs to `docs/` (listed in [DOCS.md](DOCS.md)).
+Create a repository from the template on GitHub (**Use this template**), clone it, open it in an AI coding agent and paste:
+
+> Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
+
+[SETUP.md](SETUP.md) walks the agent through everything: dependencies, env vars, linking the hosted Supabase project and pushing migrations, the dashboard settings, rebranding, optional payments, checks, and a first sign-up.
+
+## Deploy
+
+Any Node host that runs Next.js 16 works; Vercel needs no configuration.
+
+1. Use a **separate production Supabase project**: link it and `npm run db:push` there, and repeat the dashboard settings from [SETUP.md](SETUP.md) step 6 with the production address.
+2. In Supabase → **Authentication → URL Configuration**, set **Site URL** to the production origin and add `<origin>/auth/callback` and `<origin>/auth/email-change` to **Redirect URLs**.
+3. Set the env vars in the host's dashboard: the four required ones (with `SITE_URL` = the production origin) and, if billing is on, the Stripe group with live keys. The server refuses to start if any are missing.
+4. With billing on, add the production webhook endpoint in Stripe ([STRIPE.md](STRIPE.md)).
+5. Using Cloudflare for DNS in front of Vercel? Keep the records **DNS only**; proxying stacks two CDNs. On Cloudflare Workers (OpenNext), rename `src/proxy.ts` to `src/middleware.ts` ([AUTH.md](AUTH.md)).

@@ -1,0 +1,14 @@
+# Workers Assets serves static files (public/, /_next/static) before Next.js
+# runs, so next.config.ts headers() never reaches them. These repeat its
+# SECURITY_HEADERS — keep the two in step. Rules for one path merge: a later
+# rule adds to an earlier one rather than replacing it. See docs/CLOUDFLARE.md.
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Build output is content-hashed, so a file at a given URL never changes.
+/_next/static/*
+  Cache-Control: public,max-age=31536000,immutable

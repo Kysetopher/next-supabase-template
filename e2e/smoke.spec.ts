@@ -44,8 +44,8 @@ test("URL error codes map to fixed messages, never echoed text", async ({ page }
 });
 
 test("unknown routes redirect a signed-out visitor to /login", async ({ page }) => {
-  // Protected by default: the proxy can't tell an unknown path from a new
-  // protected page, so signed-out visitors never see the 404 — which also
+  // Protected by default: the middleware can't tell an unknown path from a
+  // new protected page, so signed-out visitors never see the 404 — which also
   // means it doesn't reveal which routes exist. Signed-in users get not-found.tsx.
   await page.goto("/this-page-does-not-exist");
   await expect(page).toHaveURL(/\/login$/);

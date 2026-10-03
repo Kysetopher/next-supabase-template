@@ -16,7 +16,7 @@ test("the Stripe webhook never accepts an unsigned request", async ({ request })
     maxRedirects: 0,
   });
   // 503 with billing disabled, 400 for a missing signature with it enabled —
-  // never a redirect to /login (the proxy skips /api/*) and never 200.
+  // never a redirect to /login (the middleware skips /api/*) and never 200.
   expect(response.status()).not.toBe(200);
   expect([400, 401, 403, 404, 503]).toContain(response.status());
 });

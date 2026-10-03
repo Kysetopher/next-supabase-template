@@ -2,7 +2,7 @@
 
 An unbranded starting point: Next.js 16 (App Router) + TypeScript + Tailwind v4, with a complete server-side Supabase Auth shell and a shared UI component library.
 
-All documentation lives in [docs/](docs/DOCS.md): [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [SKILLS](docs/SKILLS.md).
+All documentation lives in [docs/](docs/DOCS.md): [SETUP](docs/SETUP.md) · [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [SKILLS](docs/SKILLS.md).
 
 ## What's in it
 
@@ -12,17 +12,11 @@ All documentation lives in [docs/](docs/DOCS.md): [PROJECT](docs/PROJECT.md) · 
 
 ## Setup
 
-```bash
-npm install
-```
+Open the project in an AI coding agent (Claude Code, Codex, …) and paste:
 
-```bash
-cp .env.example .env.local
-```
+> Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
 
-1. Create a Supabase project and fill in `.env.local` (keys from Dashboard → Settings → API Keys).
-2. Apply the migrations: `npx supabase link --project-ref <ref>` then `npm run db:push`.
-3. Do the dashboard settings in [docs/AUTH.md](docs/AUTH.md#supabase-dashboard-settings-this-depends-on) — notably the **Reset Password** email template showing `{{ .Token }}` and the two redirect URLs.
+The agent installs everything, checks your `.env.local`, connects your hosted Supabase project, rebrands the app and verifies it, stopping for the steps only you can do (typing in your keys, signing in to Supabase, dashboard settings). Keys never go in the chat. Details: [docs/SETUP.md](docs/SETUP.md).
 
 ### Database changes
 
@@ -49,7 +43,7 @@ The server checks its env vars at startup (`src/instrumentation.ts` → `src/lib
 1. `src/lib/site.ts` — app name and description.
 2. `src/app/globals.css` — color tokens in `:root` (`--primary` is the one brand color).
 3. `src/app/icon.*` / `favicon.ico` — replace the icon.
-4. Add pages under `src/app/(protected)/` — they're protected automatically; add public ones to `PUBLIC_ROUTES` in `src/proxy.ts`.
+4. Add pages under `src/app/(protected)/` — they're protected automatically; add public ones to `PUBLIC_ROUTES` in `src/middleware.ts`.
 5. Every new table: copy the shape of `profiles` in `supabase/migrations/*_profiles_and_avatars.sql` — RLS on, one policy per allowed operation on `(select auth.uid())`, narrow grants, `references auth.users(id) on delete cascade`. New user-owned storage buckets also need a `deleteUserFiles()` call in `deleteAccount()`. Run `npm run db:types` after migrations.
 
 ## Layout

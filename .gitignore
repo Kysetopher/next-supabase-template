@@ -37,6 +37,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudflare / opennext (docs/CLOUDFLARE.md)
+.open-next/
+.wrangler/
+# every wrangler env file, e.g. .dev.vars.production. This project uses
+# .env.local only; a .dev.vars would shadow it for wrangler.
+.dev.vars*
+cloudflare-env.d.ts
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
