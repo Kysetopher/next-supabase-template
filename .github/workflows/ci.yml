@@ -38,6 +38,14 @@ jobs:
       - name: Smoke tests
         run: npm run test:e2e
 
+      # The same build Cloudflare Workers Builds runs (docs/CLOUDFLARE.md), so a
+      # change that won't bundle for Workers fails here before it reaches a
+      # deploy. Needs no secrets or env vars: GitHub holds none, and deploys
+      # stay on Workers Builds. After the smoke tests because it rebuilds .next
+      # in standalone mode, which `next start` doesn't serve.
+      - name: Build for Cloudflare Workers
+        run: npx opennextjs-cloudflare build
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

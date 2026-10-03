@@ -37,20 +37,25 @@ Skills are step-by-step instructions you load for specific kinds of work. They s
 |---|---|---|
 | `new-table`, `new-page`, `new-component` | this project | schema changes, pages and routes, UI components |
 | `supabase`, `supabase-postgres-best-practices` | Supabase (official, pinned in `skills-lock.json`) | Supabase and Postgres work |
+| `wrangler`, `cloudflare`, `workers-best-practices` | Cloudflare (official, pinned in `skills-lock.json`) | deploying and running on Cloudflare Workers |
 
 Check the folder **your** agent reads:
 
-- **Claude Code:** `.claude/skills/` must contain all five.
-- **Codex** (and other agents that use `.agents/skills/`): `.agents/skills/` must contain all five. If the project's own three are missing there, run `npm run skills:sync`.
-- **Any other agent with its own skills folder:** install the Supabase set for it with `npx skills add supabase/agent-skills -s '*' -a <agent-id> -y --copy` (`npx skills add --help` lists agent ids), and copy the project's three skills from `.claude/skills/` into that folder.
+- **Claude Code:** `.claude/skills/` must contain all eight.
+- **Codex** (and other agents that use `.agents/skills/`): `.agents/skills/` must contain all eight. If the project's own three are missing there, run `npm run skills:sync`.
+- **Any other agent with its own skills folder:** install the Supabase and Cloudflare sets for it with the commands below, replacing `-a claude-code codex` with `-a <agent-id>` (`npx skills add --help` lists agent ids), and copy the project's three skills from `.claude/skills/` into that folder.
 
-If one of the Supabase skills is missing anywhere, restore it with:
+If one of the installed skills is missing anywhere, restore its set with:
 
 ```bash
 npx skills add supabase/agent-skills -s '*' -a claude-code codex -y --copy
 ```
 
-**Project rules come first.** Where an installed skill disagrees with this project's docs — notably the `supabase` skill's local-database workflow (`supabase db pull --local`, iterating with `execute_sql`) — follow the project: hosted projects only, schema changes as hand-written migration files (the `new-table` skill). Tell the user which skills are loaded, in one line.
+```bash
+npx skills add cloudflare/skills -s wrangler cloudflare workers-best-practices -a claude-code codex -y --copy
+```
+
+**Project rules come first.** Where an installed skill disagrees with this project's docs — notably the `supabase` skill's local-database workflow (`supabase db pull --local`, iterating with `execute_sql`) — follow the project: hosted projects only, schema changes as hand-written migration files (the `new-table` skill). The Cloudflare overrides (keep OpenNext, keep `cloudflare-bindings.d.ts` hand-written, no local Workers builds) are in docs/SKILLS.md. Tell the user which skills are loaded, in one line.
 
 ## 4. Environment variables
 
@@ -115,7 +120,7 @@ It must succeed, and `src/lib/supabase/types.ts` must contain `profiles`, `auth_
 3. **Authentication → URL Configuration:** set **Site URL** to `http://localhost:3000`, and add these two **Redirect URLs**: `http://localhost:3000/auth/callback` and `http://localhost:3000/auth/email-change`. Save.
 4. **Database → Extensions:** confirm `pg_cron` is enabled (the migration enables it; this just checks).
 
-Tell them: when the app goes live, the Site URL and the two redirect URLs need adding for the production address too (see **Deploy** in docs/PROJECT.md).
+Tell them: when the app goes live, the deployed address needs its own Site URL and redirect URLs — the deploy runbook (step 12) walks through it.
 
 ## 7. Make it yours
 
@@ -170,6 +175,12 @@ If any step fails, ask what they saw and fix it.
 
 Ask before committing. If they agree, commit with a message like `Set up project`. Tell them they can review and push it in **GitHub Desktop** (it will show the commit; **Push origin** sends it to GitHub). `.env.local` is ignored by git and must stay out of every commit.
 
+## 12. Deploy to Cloudflare (when ready)
+
+Optional, and not part of this run. Tell the user that when they want the app live, they paste this into the agent:
+
+> Deploy this project to Cloudflare: read docs/CLOUDFLARE.md and follow the Deploy runbook step by step. Stop and wait for me at every USER STEP.
+
 ## Done
 
-Summarize for the user: what was set up, the app's name and color, whether payments are on, and the next things they might do (add pages, deploy — see docs/PROJECT.md). Remind them that their keys live only in `.env.local` on this computer, and that the hosting provider needs the same variables when they deploy.
+Summarize for the user: what was set up, the app's name and color, whether payments are on, and the next things they might do (add pages, deploy with the prompt in step 12). Remind them that their keys live only in `.env.local` on this computer; when they deploy, the secret ones go into Cloudflare as encrypted Secrets, entered by them, never in the chat or in a commit.

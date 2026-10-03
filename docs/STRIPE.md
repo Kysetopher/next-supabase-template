@@ -32,7 +32,7 @@ Subscriptions and one-time purchases through Stripe, with an embedded payment fo
 
    The key (`pro`) is what URLs and forms use (`/checkout?product=pro`), and it's stored on rows, so keep it stable. `priceEnvVar` must be `STRIPE_PRICE_<NAME>`. You can also hard-code `priceId: "price_..."`, but then test and live mode can't differ. The amount always comes from the Stripe Price. With billing on, the server won't start if a listed product's price variable is missing.
 
-2. **Env vars** (`.env.local`, or your host's dashboard). Set all three or none:
+2. **Env vars** (`.env.local`; deployed, see [CLOUDFLARE.md](CLOUDFLARE.md): `STRIPE_PUBLISHABLE_KEY` and the prices are `vars` in `wrangler.jsonc`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are Cloudflare Secrets). Set all three or none:
    - `STRIPE_SECRET_KEY`: *Developers → API keys → Secret key* (`sk_test_…`). A restricted key (`rk_…`) works if it can write Customers, Subscriptions, PaymentIntents, Billing Portal sessions, and read Prices, Charges and Disputes.
    - `STRIPE_PUBLISHABLE_KEY`: same page (`pk_test_…`). It must be the same mode as the secret key. It's passed to the checkout form at request time, not through `NEXT_PUBLIC_`, so one build can't ship the wrong mode's key.
    - `STRIPE_WEBHOOK_SECRET`: from the webhook endpoint (step 3) or `stripe listen` (`whsec_…`).
@@ -53,6 +53,8 @@ Subscriptions and one-time purchases through Stripe, with an embedded payment fo
    ```
 
    No `invoice.*` events are needed: a paid or failed renewal changes the subscription's status, and that arrives as `customer.subscription.updated`.
+
+   **One endpoint per environment**, each with its own signing secret in that Worker's `STRIPE_WEBHOOK_SECRET`: a live-mode endpoint on the production domain, a test-mode one on the dev Worker's domain. If the dev Worker is behind Cloudflare Access, give `/api/webhooks/stripe` a **Bypass** policy — Stripe can't sign in, and the route checks Stripe's signature itself ([CLOUDFLARE.md](CLOUDFLARE.md)).
 
 4. **Customer Portal.** *Settings → Billing → Customer portal*: turn on updating payment methods, invoice history and cancellation (and plan switching, if you want it). "Manage billing" on `/account` opens it.
 
@@ -133,5 +135,5 @@ The Playwright smoke suite runs with billing **disabled** (no `STRIPE_*` in `pla
 - One subscription per user, with one item. Plan changes go through the Customer Portal (configure the products it may switch between there). The webhook records the new price and maps it back to a catalog key.
 - Opening `/checkout` creates Stripe objects: it reuses an unpaid subscription, but a one-time product gets a new PaymentIntent each time. Unconfirmed ones charge nothing and can be left.
 - Two webhook deliveries for the same subscription that run at exactly the same time could each write what they fetched, in either order. The next event corrects it.
-- Billing calls go through the burst limiter (`billing` policy, 10/min per user, per instance — see docs/AUTH.md).
-- Deploying to Cloudflare Workers: nothing extra is needed. The fetch HTTP client and `constructEventAsync` are already used.
+- Billing calls go through the burst limiter (`billing` policy, 10/min per user — see docs/AUTH.md).
+- On Cloudflare Workers nothing else is needed: the fetch HTTP client and `constructEventAsync` are already used. Billing's burst limit is the `RATE_LIMIT_BILLING` binding there.

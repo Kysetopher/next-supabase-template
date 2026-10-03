@@ -28,13 +28,13 @@
 - Never use `getSession()` for authorization. Never import `createServiceClient()` into request-facing data code; it bypasses RLS and is reserved for the narrow cases listed in `src/lib/supabase/service.ts`.
 - **Every table** follows the `profiles` pattern in `supabase/migrations/*_profiles_and_avatars.sql`: RLS on, one policy per allowed operation on `(select auth.uid())`, grants as narrow as the policies, `references auth.users(id) on delete cascade`. Anything outside Postgres (storage files, Stripe customers) is cleaned up in `deleteAccount()`.
 - **Schema changes are migrations** (`npm run db:new <name>`), never hand-edits to a hosted database — no `execute_sql` / `supabase db query` changes, no `db pull` from a database. There is no local database: never run `supabase start`, `db reset` or Docker. Run `npm run db:types` after every migration. These rules override any installed skill that says otherwise ([SKILLS.md](SKILLS.md)).
-- Read env vars through `env` from `@/lib/env`, never `process.env.X!`. A new required variable goes in `src/lib/env.ts` (so the server refuses to start without it) and in `.env.example` with where to find it.
+- Read env vars through `env` from `@/lib/env`, never `process.env.X!`. A new required variable goes in `src/lib/env.ts` (so the server refuses to start without it), in `.env.example` with where to find it, and, for deploys, in both `vars` blocks of `wrangler.jsonc` if it isn't secret or as a Cloudflare Secret on each Worker if it is — never a secret in `wrangler.jsonc` ([CLOUDFLARE.md](CLOUDFLARE.md)).
 - URL-driven messages (`?error=`, `?message=`) go through the fixed codes in `src/lib/url-messages.ts` — never render text taken from the URL.
 - Validate every Server Action input on the server; a Server Action can be posted from anywhere, not just its form.
 - Secrets are never `NEXT_PUBLIC_`. Values the browser needs (e.g. a publishable key) are passed from the server at request time.
 
 ## Testing and checks
-- `npm run typecheck`, `npm run lint`, `npm run build` and `npm run test:e2e` must pass before a change is done; CI runs all four.
+- `npm run typecheck`, `npm run lint`, `npm run build` and `npm run test:e2e` must pass before a change is done; CI runs all four, then the Cloudflare Workers build (`npx opennextjs-cloudflare build`) — don't run that one locally ([CLOUDFLARE.md](CLOUDFLARE.md)).
 - Smoke tests in `e2e/` run with no Supabase or Stripe behind them. Add one for every new public page, protected route, or security behaviour (redirects, headers, error codes).
 - A new UI component gets an example in the `/components` gallery (`src/components/gallery/component-gallery.tsx`).
 

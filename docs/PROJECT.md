@@ -11,6 +11,7 @@ An unbranded starting point for web apps: Next.js 16 (App Router) + TypeScript +
 | UI | Our own component library on Radix primitives, `@iconify/react` icons, `simplebar-react` scrolling |
 | Data + auth | Supabase (Postgres, Auth, Storage) through `@supabase/ssr`, server-side only |
 | Billing | Stripe (optional) — [STRIPE.md](STRIPE.md) |
+| Hosting | Cloudflare Workers via `@opennextjs/cloudflare`, deployed by Workers Builds; `wrangler` — [CLOUDFLARE.md](CLOUDFLARE.md) |
 | Tests | Playwright smoke tests; GitHub Actions CI |
 
 ## Routes
@@ -27,13 +28,13 @@ An unbranded starting point for web apps: Next.js 16 (App Router) + TypeScript +
 | `/checkout`, `/checkout/success` | signed in, billing enabled | Embedded Stripe checkout |
 | `/api/webhooks/stripe` | Stripe only | Signature-verified webhook |
 
-Everything not listed as public in `src/proxy.ts` is protected by default — see [AUTH.md](AUTH.md).
+Everything not listed as public in `src/middleware.ts` is protected by default — see [AUTH.md](AUTH.md).
 
 ## Layout
 
 ```
 src/
-  proxy.ts                 session refresh + optimistic redirects
+  middleware.ts            session refresh + optimistic redirects
   instrumentation.ts       env check at startup
   app/(auth)/              login, signup, check-email, forgot/reset password
   app/(protected)/         dashboard, account, components gallery, checkout
@@ -50,21 +51,25 @@ src/
   lib/billing/             Stripe client, customers, subscriptions, payments, products
   lib/calendar/            calendar event type and helpers
   lib/supabase/            server/service clients, dal, db, generated types
-  lib/rate-limit/          burst limiter, client IP
+  lib/rate-limit/          burst limiter (Workers rate-limit bindings), client IP
   lib/env.ts               typed env access, checked at startup
   lib/site.ts              the app's name and description
   lib/url-messages.ts      fixed ?error= / ?message= codes
+public/_headers            security + cache headers for static files on Workers
 supabase/
   migrations/              versioned schema (auth limits, profiles + avatars, billing)
   templates/               auth email templates
   config.toml              Supabase CLI config (no local database); records the auth settings
 scripts/check-env.mjs      npm run check:env — validates .env.local without printing it
 e2e/                       Playwright smoke tests
+wrangler.jsonc             Cloudflare Workers config: name, vars, rate limits, env.dev — CLOUDFLARE.md
+open-next.config.ts        OpenNext build config (defaults)
+cloudflare-bindings.d.ts   types for the bindings in wrangler.jsonc
 docs/                      all documentation — start at DOCS.md
 .claude/skills/            agent skills for Claude Code — SKILLS.md
 .agents/skills/            the same skills for Codex and other agents (npm run skills:sync)
-skills-lock.json           pinned versions of installed skill sets (Supabase)
-.github/workflows/ci.yml   typecheck, lint, build, smoke tests
+skills-lock.json           pinned versions of installed skill sets (Supabase, Cloudflare)
+.github/workflows/ci.yml   typecheck, lint, build, smoke tests, Cloudflare Workers build
 ```
 
 ## Scripts
@@ -72,7 +77,7 @@ skills-lock.json           pinned versions of installed skill sets (Supabase)
 | Script | Does |
 |---|---|
 | `npm run dev` | Dev server on :3000 |
-| `npm run build` / `npm run start` | Production build / serve |
+| `npm run build` / `npm run start` | Production build / serve with Node (the smoke tests use it; deploys are built by Cloudflare — [CLOUDFLARE.md](CLOUDFLARE.md)) |
 | `npm run typecheck`, `npm run lint` | TypeScript, ESLint |
 | `npm run skills:sync` | Mirrors the project's own skills from `.claude/skills` to `.agents/skills` |
 | `npm run check:env` | Validates `.env.local` the way the server does at startup, without printing values |
@@ -80,10 +85,11 @@ skills-lock.json           pinned versions of installed skill sets (Supabase)
 | `npm run db:new <name>` | New empty migration |
 | `npm run db:types` | Regenerate `src/lib/supabase/types.ts` from the linked project |
 | `npm run db:push` | Apply pending migrations to the linked hosted project |
+| `npx wrangler <command>` | Cloudflare's CLI, for logs, deployments and secrets of the deployed Workers — no deploys from here ([CLOUDFLARE.md](CLOUDFLARE.md) "Agent tooling") |
 
 ## Environment
 
-`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SITE_URL` are required; the server refuses to start without them (`src/lib/env.ts`). The Stripe variables are an optional all-or-nothing group ([STRIPE.md](STRIPE.md)). See `.env.example` for where each comes from.
+`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SITE_URL` are required; the server refuses to start without them (`src/lib/env.ts`; on Workers, requests fail with the list in the logs). Locally they live in `.env.local`; deployed, in `wrangler.jsonc` `vars` and Cloudflare Secrets ([CLOUDFLARE.md](CLOUDFLARE.md)). The Stripe variables are an optional all-or-nothing group ([STRIPE.md](STRIPE.md)). See `.env.example` for where each comes from.
 
 ## Starting a new project
 
@@ -91,14 +97,12 @@ Create a repository from the template on GitHub (**Use this template**), clone i
 
 > Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
 
-[SETUP.md](SETUP.md) walks the agent through everything: dependencies, env vars, linking the hosted Supabase project and pushing migrations, the dashboard settings, rebranding, optional payments, checks, and a first sign-up.
+[SETUP.md](SETUP.md) walks the agent through everything: dependencies, env vars, linking the hosted Supabase project and pushing migrations, the dashboard settings, rebranding, optional payments, checks, a first sign-up, and points to the deploy runbook.
 
 ## Deploy
 
-Any Node host that runs Next.js 16 works; Vercel needs no configuration.
+Cloudflare Workers, through `@opennextjs/cloudflare`, built and deployed by Cloudflare's Workers Builds on every push: `production` → the production Worker, `main` → an optional dev Worker. Secrets live in Cloudflare as encrypted Secrets, everything else in `wrangler.jsonc`. To deploy, paste into an AI coding agent:
 
-1. Use a **separate production Supabase project**: link it and `npm run db:push` there, and repeat the dashboard settings from [SETUP.md](SETUP.md) step 6 with the production address.
-2. In Supabase → **Authentication → URL Configuration**, set **Site URL** to the production origin and add `<origin>/auth/callback` and `<origin>/auth/email-change` to **Redirect URLs**.
-3. Set the env vars in the host's dashboard: the four required ones (with `SITE_URL` = the production origin) and, if billing is on, the Stripe group with live keys. The server refuses to start if any are missing.
-4. With billing on, add the production webhook endpoint in Stripe ([STRIPE.md](STRIPE.md)).
-5. Using Cloudflare for DNS in front of Vercel? Keep the records **DNS only**; proxying stacks two CDNs. On Cloudflare Workers (OpenNext), rename `src/proxy.ts` to `src/middleware.ts` ([AUTH.md](AUTH.md)).
+> Deploy this project to Cloudflare: read docs/CLOUDFLARE.md and follow the Deploy runbook step by step. Stop and wait for me at every USER STEP.
+
+How it all works — environments, variables, domain, Supabase and Stripe per environment: [CLOUDFLARE.md](CLOUDFLARE.md). The routes above behave the same on Workers.

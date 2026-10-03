@@ -1,12 +1,12 @@
 # Auth
 
-Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser Supabase client: every auth call runs in a Server Action, Route Handler, or the proxy, and every page reads the user on the server.
+Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser Supabase client: every auth call runs in a Server Action, Route Handler, or the middleware, and every page reads the user on the server.
 
 ## Pieces
 
 | Path | Role |
 |---|---|
-| `src/proxy.ts` | Refreshes the session cookie on every non-public request; optimistic redirects (`/login` when signed out, `/dashboard` when signed in on `/login`/`/signup`). Public routes are an **allowlist**, so new pages are protected by default. |
+| `src/middleware.ts` | Refreshes the session cookie on every non-public request; optimistic redirects (`/login` when signed out, `/dashboard` when signed in on `/login`/`/signup`). Public routes are an **allowlist**, so new pages are protected by default. |
 | `src/lib/supabase/server.ts` | Request-scoped client (publishable key + cookies). RLS sees the real user. |
 | `src/lib/supabase/dal.ts` | `getUser()` (cached per request, `getClaims()` — local JWT verification) and `requireUser()` (redirects to `/login`). **The real security boundary.** |
 | `src/lib/supabase/db.ts` | `db()` → `{ supabase, user }` for authenticated data access. |
@@ -34,25 +34,25 @@ Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser S
 
 1. **Authentication → Providers → Email**: "Confirm email" **on**; "Secure email change" **on**; "Secure password change" (require reauthentication) **on**.
 2. **Authentication → Email Templates → Reset Password**: show the code, not the link — e.g. `<p>Your code is <strong>{{ .Token }}</strong></p>`. If it still shows `{{ .ConfirmationURL }}` the reset page has nothing to type.
-3. **Authentication → URL Configuration**: Site URL = `SITE_URL`; Redirect URLs include `SITE_URL/auth/callback` and `SITE_URL/auth/email-change` (otherwise Supabase sends links to the Site URL and the flows never complete).
+3. **Authentication → URL Configuration**: Site URL = `SITE_URL`; Redirect URLs include `SITE_URL/auth/callback` and `SITE_URL/auth/email-change` (otherwise Supabase sends links to the Site URL and the flows never complete). Each deployed domain needs its own two Redirect URLs, in the Supabase project that environment uses ([CLOUDFLARE.md](CLOUDFLARE.md)).
 4. **Database → Extensions**: `pg_cron` (the migration enables it; it prunes old limit rows nightly).
 5. Run `supabase/migrations/*_auth_limits.sql` (`npx supabase db push`, or paste it into the SQL editor).
 
 ## Rate limiting is layered
 
-- **Burst** (`src/lib/rate-limit/burst.ts`): 5/min per action + IP. In-memory, **per instance**, fails open. Swap the body of `checkBurst()` for a shared store (Cloudflare rate-limit binding, Upstash, …) in production if you need it to hold across instances.
+- **Burst** (`src/lib/rate-limit/burst.ts`): 5/min per action + IP (`auth`), 10/min per user (`billing`). On Workers, each policy is a Workers rate-limit binding in `wrangler.jsonc` (`RATE_LIMIT_AUTH`, `RATE_LIMIT_BILLING`): counted per Cloudflare location, eventually consistent. Without the binding (`next start`, the e2e tests) it falls back to an in-memory counter per instance. Fails open either way. See [CLOUDFLARE.md](CLOUDFLARE.md).
 - **Exact per-email** (`src/lib/auth/email-limits.ts` + the migration): Postgres counters, **fail closed**. This is the layer that actually stops inbox flooding, code brute force and distributed password guessing.
 
-`getClientIp()` trusts `cf-connecting-ip`, then `x-real-ip`, then `x-forwarded-for`. Make sure your host sets/overwrites the header you rely on.
+`getClientIp()` trusts `cf-connecting-ip`, then `x-real-ip`, then `x-forwarded-for`. On Workers, Cloudflare's edge sets `cf-connecting-ip` to the real client address and overwrites anything a client sends, so that's the one used. The fallbacks only matter off Cloudflare (local dev, `next start`), where `x-forwarded-for` can be set freely by a client.
 
 ## Route protection is layered, not singular
 
-1. `src/proxy.ts` — optimistic, cookie-based, keeps signed-out users from rendering pages that would bounce.
+1. `src/middleware.ts` — optimistic, cookie-based, keeps signed-out users from rendering pages that would bounce.
 2. `requireUser()` in `(protected)/layout.tsx` — gates the segment on first load.
 3. `requireUser()` / `db()` in every page and action that reads or writes user data — layouts don't re-run on client navigation, so never rely on the layout alone.
 4. Postgres RLS — the request-scoped client uses the publishable key, so every table you add needs RLS policies on `auth.uid()`.
 
-API routes (`/api/*`) are excluded from the proxy: call `getUser()` yourself and return a JSON 401.
+API routes (`/api/*`) are excluded from the middleware: call `getUser()` yourself and return a JSON 401.
 
 ## Never use `getSession()` for authorization
 
@@ -62,12 +62,14 @@ API routes (`/api/*`) are excluded from the proxy: call `getUser()` yourself and
 
 `createServiceClient()` bypasses RLS. It's used for exactly two things: the pre-session auth limits and deleting the caller's own `auth.users` row (the Admin API requires the secret key). Don't import it into anything that reads or writes user data on behalf of a request — use `createClient()` so RLS applies.
 
-## Deploying to Cloudflare Workers (OpenNext)
+## Why `middleware.ts`, not `proxy.ts`
 
-`@opennextjs/cloudflare` doesn't support Next 16's `proxy.ts` yet. Rename `src/proxy.ts` → `src/middleware.ts` and `export async function proxy` → `export async function middleware`; nothing else changes. Keep the file **inside `src/`** (next to `app/`) — Next only picks it up at the same level as the `app` directory.
+Next.js 16 renamed the `middleware` file convention to `proxy`, but this app deploys to Cloudflare Workers through `@opennextjs/cloudflare` ([CLOUDFLARE.md](CLOUDFLARE.md)). `proxy.ts` always runs on the Node.js runtime, and OpenNext (1.20) bundles Node.js middleware for Workers only with a warning that it's experimental and not maintained by the OpenNext team. `middleware.ts` runs on the edge runtime, which OpenNext supports fully. The old name is deprecated, not removed; `next build` prints a deprecation notice, which is expected. Re-evaluate when OpenNext supports `proxy.ts` officially: rename the file and the function, nothing else changes.
+
+Keep it **inside `src/`**, next to `app/` — Next only finds it there. And don't remove it to "simplify": Server Components can't write cookies and Supabase's refresh token rotates on use, so without the middleware refreshing the cookie, the next request replays a used refresh token and the user is silently logged out.
 
 ## Env vars
 
-`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SITE_URL` — none are `NEXT_PUBLIC_`, since nothing reads them in the browser. See `.env.example`.
+`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SITE_URL` — none are `NEXT_PUBLIC_`, since nothing reads them in the browser. See `.env.example`. Deployed, `SUPABASE_SECRET_KEY` is a Cloudflare Secret and the other three are `vars` in `wrangler.jsonc` ([CLOUDFLARE.md](CLOUDFLARE.md)).
 
 Reference: https://supabase.com/docs/guides/auth/server-side/nextjs

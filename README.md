@@ -2,11 +2,11 @@
 
 An unbranded starting point: Next.js 16 (App Router) + TypeScript + Tailwind v4, with a complete server-side Supabase Auth shell and a shared UI component library.
 
-All documentation lives in [docs/](docs/DOCS.md): [SETUP](docs/SETUP.md) · [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [SKILLS](docs/SKILLS.md).
+All documentation lives in [docs/](docs/DOCS.md): [SETUP](docs/SETUP.md) · [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [CLOUDFLARE](docs/CLOUDFLARE.md) · [SKILLS](docs/SKILLS.md).
 
 ## What's in it
 
-- **Auth** (see [docs/AUTH.md](docs/AUTH.md)): sign up with email confirmation (PKCE), log in, forgot/reset password by 6-digit code, change email, change password, delete account, log out. Session refresh in `src/proxy.ts`, `requireUser()` as the real gate, per-email Postgres rate limits that fail closed.
+- **Auth** (see [docs/AUTH.md](docs/AUTH.md)): sign up with email confirmation (PKCE), log in, forgot/reset password by 6-digit code, change email, change password, delete account, log out. Session refresh in `src/middleware.ts`, `requireUser()` as the real gate, per-email Postgres rate limits that fail closed.
 - **Protected app shell**: `(protected)/` layout with a slim sidebar, `/dashboard`, `/account`, and `/components` (a gallery of every UI component).
 - **UI library** (`src/components/ui`): Radix-based primitives and composites — buttons, inputs, selects, dialogs, menus, tables, data table, date/time pickers, phone input, tabs, accordion, cards, motion/reveal effects and more. All colors come from semantic tokens.
 
@@ -34,9 +34,17 @@ npm run dev
 
 ### Checks
 
-`npm run typecheck`, `npm run lint`, and `npm run test:e2e` (Playwright smoke tests: builds, then checks pages render, protected routes redirect, URL error codes are safe and security headers are sent — no Supabase needed). `.github/workflows/ci.yml` runs all of them plus the build on every push to `main` and every pull request.
+`npm run typecheck`, `npm run lint`, and `npm run test:e2e` (Playwright smoke tests: builds, then checks pages render, protected routes redirect, URL error codes are safe and security headers are sent — no Supabase needed). `.github/workflows/ci.yml` runs all of them plus the build and the Cloudflare Workers build on every push to `main` and every pull request.
 
-The server checks its env vars at startup (`src/instrumentation.ts` → `src/lib/env.ts`) and refuses to start with a list of anything missing or malformed. Read env vars through `env` from `@/lib/env`, not `process.env`.
+The server checks its env vars at startup (`src/instrumentation.ts` → `src/lib/env.ts`) and refuses to start with a list of anything missing or malformed (on Cloudflare Workers, the first request fails with that list in the logs instead). Read env vars through `env` from `@/lib/env`, not `process.env`.
+
+## Deploy
+
+Deploys to Cloudflare Workers through OpenNext, built by Cloudflare's Workers Builds from your GitHub repository. Open the project in an AI coding agent and paste:
+
+> Deploy this project to Cloudflare: read docs/CLOUDFLARE.md and follow the Deploy runbook step by step. Stop and wait for me at every USER STEP.
+
+Details: [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md).
 
 ## Starting a new project from this
 
@@ -50,7 +58,7 @@ The server checks its env vars at startup (`src/instrumentation.ts` → `src/lib
 
 ```
 src/
-  proxy.ts                 session refresh + optimistic redirects
+  middleware.ts            session refresh + optimistic redirects
   app/(auth)/              login, signup, check-email, forgot/reset password
   app/(protected)/         dashboard, account, components gallery
   app/auth/                PKCE callback routes
@@ -63,5 +71,6 @@ src/
 supabase/migrations/       auth limits; profiles + avatars (the RLS pattern to copy)
 supabase/config.toml       Supabase CLI project config
 e2e/                       Playwright smoke tests
+wrangler.jsonc             Cloudflare Workers config (docs/CLOUDFLARE.md)
 docs/AUTH.md               how auth works and why
 ```

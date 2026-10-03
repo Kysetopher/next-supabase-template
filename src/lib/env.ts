@@ -1,7 +1,9 @@
 /**
  * Server env vars, checked once at boot (src/instrumentation.ts) so a missing
  * or malformed value stops the server with a plain message instead of
- * failing deep inside the first request. Read them through `env` rather than
+ * failing deep inside the first request. On Cloudflare Workers that check
+ * runs on the first request instead, and the getters below throw per
+ * variable wherever it didn't run (the middleware). Read them through `env` rather than
  * `process.env.X!`. See .env.example for where each value comes from.
  */
 const VARS = {
@@ -106,7 +108,7 @@ export function assertEnv(): void {
   if (problems.length) {
     throw new Error(
       `Missing or invalid environment variables:\n${problems.map((p) => `  - ${p}`).join("\n")}\n` +
-        "Copy .env.example to .env.local (or set them in your host's dashboard) and restart."
+        "Copy .env.example to .env.local and restart. Deployed: wrangler.jsonc vars and Cloudflare Secrets (docs/CLOUDFLARE.md)."
     );
   }
 }
