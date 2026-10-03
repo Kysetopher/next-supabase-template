@@ -13,8 +13,8 @@ export {};
  * sake of one small interface. Not named `cloudflare-env.d.ts` because
  * .gitignore reserves that name for `wrangler types` output.
  *
- * Optional on purpose: the bindings exist only on Workers (and in `next dev` /
- * `preview`), not under `next start`, and checkBurst() falls back when they're
+ * Optional on purpose: the bindings exist only on Workers (and in `next dev`,
+ * which emulates them), not under `next start`, and checkBurst() falls back when they're
  * missing. Add one here when you add a binding to wrangler.jsonc.
  */
 declare global {

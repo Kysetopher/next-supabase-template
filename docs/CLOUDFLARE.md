@@ -71,7 +71,7 @@ Each Supabase project needs its own domain's URLs under **Authentication → URL
 - **Site URL**: that environment's `SITE_URL`.
 - **Redirect URLs**: `<SITE_URL>/auth/callback` and `<SITE_URL>/auth/email-change`, exact, no wildcards. Keep `http://localhost:3000/…` on the development project.
 
-The production project also needs the rest of [SETUP.md](SETUP.md) step 6 (email settings, the reset-code template, `pg_cron`) and the migrations (`npm run db:push` while linked to it).
+The production project also needs the rest of [SETUP.md](SETUP.md) step 7 (email settings, the reset-code template, `pg_cron`) and the migrations (`npm run db:push` while linked to it).
 
 ## Stripe
 
@@ -110,7 +110,7 @@ Workers Builds runs `npx opennextjs-cloudflare build` and `npx wrangler deploy`,
 
 ## Agent tooling
 
-Wrangler is in the repo so an AI agent can use it as a tool against the deployed Workers, alongside Cloudflare's official skills.
+Wrangler is in the repo so an AI agent can use it as a tool against the deployed Workers, alongside Cloudflare's official skills. Cloudflare's read-only MCP servers (docs, Workers logs, Workers Builds) are set up in [MCP.md](MCP.md).
 
 **`npx wrangler login` is a USER STEP**: it opens a browser to authorize this computer. Give the user the command; never ask for a token.
 
@@ -199,7 +199,7 @@ npx supabase link --project-ref <development-ref>
 
 The last one links the CLI back to the development project, so everyday `db:push` and `db:types` keep targeting it. (The development ref is the subdomain of `SUPABASE_URL` in `.env.local`; read only that line.)
 
-**USER STEP — dashboard settings** on the production project: the four settings in [SETUP.md](SETUP.md) step 6, except URL Configuration, which waits for step 8.
+**USER STEP — dashboard settings** on the production project: the four settings in [SETUP.md](SETUP.md) step 7, except URL Configuration, which waits for step 8.
 
 ### 4. Production variables
 

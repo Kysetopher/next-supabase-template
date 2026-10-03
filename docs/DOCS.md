@@ -9,6 +9,7 @@ All documentation for this project lives in this folder, and every file here mus
 - [STRIPE.md](STRIPE.md) — optional Stripe billing: products config, env vars, checkout, the webhook and its safety rules, the billing tables, fulfilment hooks, and local testing.
 - [CLOUDFLARE.md](CLOUDFLARE.md) — deploying to Cloudflare Workers through OpenNext and Workers Builds: environments, variables and secrets, domain and Access, Supabase and Stripe per environment, rate-limit bindings, middleware-not-proxy, agent tooling (Wrangler, Cloudflare's skills), and the agent-run deploy runbook.
 - [SKILLS.md](SKILLS.md) — agent skills in `.claude/skills/` (Claude Code) and `.agents/skills/` (Codex and others): this project's own workflows (new table, new page, new component), the pinned Supabase set, and why project rules override installed skills.
+- [MCP.md](MCP.md) — the agent's tool connections (MCP) for Claude and Codex: Supabase (development project, read-only), Cloudflare (docs, logs, builds), GitHub, Chrome; safety rules, per-client setup, troubleshooting.
 
 ## Rule
 

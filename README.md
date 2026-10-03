@@ -2,7 +2,7 @@
 
 An unbranded starting point: Next.js 16 (App Router) + TypeScript + Tailwind v4, with a complete server-side Supabase Auth shell and a shared UI component library.
 
-All documentation lives in [docs/](docs/DOCS.md): [SETUP](docs/SETUP.md) · [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [CLOUDFLARE](docs/CLOUDFLARE.md) · [SKILLS](docs/SKILLS.md).
+All documentation lives in [docs/](docs/DOCS.md): [SETUP](docs/SETUP.md) · [PROJECT](docs/PROJECT.md) · [PRACTICES](docs/PRACTICES.md) · [AUTH](docs/AUTH.md) · [STRIPE](docs/STRIPE.md) · [CLOUDFLARE](docs/CLOUDFLARE.md) · [SKILLS](docs/SKILLS.md) · [MCP](docs/MCP.md).
 
 ## What's in it
 
@@ -16,7 +16,7 @@ Open the project in an AI coding agent (Claude Code, Codex, …) and paste:
 
 > Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
 
-The agent installs everything, checks your `.env.local`, connects your hosted Supabase project, rebrands the app and verifies it, stopping for the steps only you can do (typing in your keys, signing in to Supabase, dashboard settings). Keys never go in the chat. Details: [docs/SETUP.md](docs/SETUP.md).
+The agent installs everything, checks your `.env.local`, connects your hosted Supabase project and the agent's tools (MCP), rebrands the app and verifies it, stopping for the steps only you can do (typing in your keys, signing in to Supabase and the agent's tools, dashboard settings). Keys never go in the chat. Details: [docs/SETUP.md](docs/SETUP.md).
 
 ### Database changes
 
@@ -72,5 +72,6 @@ supabase/migrations/       auth limits; profiles + avatars (the RLS pattern to c
 supabase/config.toml       Supabase CLI project config
 e2e/                       Playwright smoke tests
 wrangler.jsonc             Cloudflare Workers config (docs/CLOUDFLARE.md)
+.mcp.json, .codex/         the agent's MCP tool connections (docs/MCP.md)
 docs/AUTH.md               how auth works and why
 ```

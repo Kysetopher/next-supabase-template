@@ -13,9 +13,9 @@ export type SessionUser = {
 // Cached per request — safe to call from multiple Server Components/layouts
 // without triggering repeat network calls to Supabase.
 //
-// Uses getClaims(), not getUser(). src/proxy.ts already makes one network
+// Uses getClaims(), not getUser(). src/middleware.ts already makes one network
 // round trip to Supabase's Auth server per request (to refresh the token,
-// which only proxy/Route Handlers/Server Actions can do — see docs/AUTH.md).
+// which only middleware/Route Handlers/Server Actions can do — see docs/AUTH.md).
 // getClaims() verifies the JWT locally instead, against a cached public key,
 // when the project signs tokens asymmetrically (check the project's
 // /auth/v1/.well-known/jwks.json for an ES256/RS256 key). It falls back to

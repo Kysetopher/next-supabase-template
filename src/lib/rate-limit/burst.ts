@@ -6,11 +6,10 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
  * Layer 1 of rate limiting: per-minute burst limits keyed per action + IP
  * (or per user once one exists). Stops a script hammering an endpoint.
  *
- * On Cloudflare Workers (and in `next dev` / `npm run preview`, which emulate
- * them) each policy is a Workers rate-limit binding declared in
- * wrangler.jsonc, where its limit and period live. Cloudflare counts per
- * location and calls it "permissive, eventually consistent", so it's a speed
- * bump, not an exact count.
+ * On Cloudflare Workers (and in `next dev`, which emulates them) each policy
+ * is a Workers rate-limit binding declared in wrangler.jsonc, where its limit
+ * and period live. Cloudflare counts per location and calls it "permissive,
+ * eventually consistent", so it's a speed bump, not an exact count.
  *
  * Anywhere without the binding (`next start`, which the e2e tests use) it
  * falls back to an in-memory fixed window with the same numbers, counted

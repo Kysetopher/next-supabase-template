@@ -1,6 +1,6 @@
 // Cloudflare Workers config, read by `wrangler deploy` (Workers Builds runs it
-// on every push), `opennextjs-cloudflare preview`, and `next dev` through
-// initOpenNextCloudflareForDev() in next.config.ts. See docs/CLOUDFLARE.md.
+// on every push) and by `next dev` through initOpenNextCloudflareForDev() in
+// next.config.ts. See docs/CLOUDFLARE.md.
 //
 // The top level is PRODUCTION (`npx wrangler deploy`, from the `production`
 // branch). `env.dev` below is the dev Worker (`npx wrangler deploy --env dev`,
@@ -53,7 +53,7 @@
   // NEVER go here. Add them in the dashboard (Worker → Settings → Variables
   // and Secrets) as type Secret, which deploys leave alone.
   //
-  // Uncomment and fill in before the first deploy (docs/SETUP.md step 12):
+  // Uncomment and fill in before the first deploy (docs/CLOUDFLARE.md runbook):
   // the server refuses to serve requests until the required ones are set.
   // These are the PRODUCTION Supabase project's values, and the live Stripe
   // ones if billing is on.

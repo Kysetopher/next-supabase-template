@@ -20,3 +20,4 @@ All project documentation lives in [docs/](docs/DOCS.md) — start there.
 - [docs/STRIPE.md](docs/STRIPE.md) — optional Stripe billing: products, checkout, webhook, billing tables, fulfilment
 - [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) — deploying to Cloudflare Workers (OpenNext, Workers Builds): environments, variables and secrets, domain, agent tooling, and the agent-run deploy runbook
 - [docs/SKILLS.md](docs/SKILLS.md) — agent skills (`.claude/skills/`, mirrored to `.agents/skills/`): new table, new page, new component, plus Supabase's official set
+- [docs/MCP.md](docs/MCP.md) — the agent's tool connections (`.mcp.json`, `.codex/config.toml`): Supabase dev project read-only, Cloudflare docs/logs/builds, GitHub, Chrome; safety rules and setup

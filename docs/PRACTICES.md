@@ -31,6 +31,7 @@
 - Read env vars through `env` from `@/lib/env`, never `process.env.X!`. A new required variable goes in `src/lib/env.ts` (so the server refuses to start without it), in `.env.example` with where to find it, and, for deploys, in both `vars` blocks of `wrangler.jsonc` if it isn't secret or as a Cloudflare Secret on each Worker if it is — never a secret in `wrangler.jsonc` ([CLOUDFLARE.md](CLOUDFLARE.md)).
 - URL-driven messages (`?error=`, `?message=`) go through the fixed codes in `src/lib/url-messages.ts` — never render text taken from the URL.
 - Validate every Server Action input on the server; a Server Action can be posted from anywhere, not just its form.
+- **Agent tools (MCP)** connect to the **development** Supabase project only, read-only by default — never production, and never a write path around migrations. The user does every sign-in; tokens never go in the chat or the repo (config names an environment variable); the agent asks before any write or destructive tool call ([MCP.md](MCP.md)).
 - Secrets are never `NEXT_PUBLIC_`. Values the browser needs (e.g. a publishable key) are passed from the server at request time.
 
 ## Testing and checks

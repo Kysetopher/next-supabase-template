@@ -1,0 +1,27 @@
+# MCP servers for Codex (CLI, IDE extension and the ChatGPT desktop app).
+# Loaded only when the project is trusted. See docs/MCP.md.
+# No secrets here: sign-ins are OAuth (`codex mcp login <name>`), and the
+# GitHub token is read from an environment variable the user sets.
+
+# Development project only, read-only. SETUP fills in the ref (docs/SETUP.md
+# step 6). Never the production project.
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=__SUPABASE_DEV_PROJECT_REF__&read_only=true&features=docs,database,debugging,development"
+default_tools_approval_mode = "prompt"
+
+[mcp_servers.cloudflare-docs]
+url = "https://docs.mcp.cloudflare.com/mcp"
+
+[mcp_servers.cloudflare-observability]
+url = "https://observability.mcp.cloudflare.com/mcp"
+
+[mcp_servers.cloudflare-builds]
+url = "https://builds.mcp.cloudflare.com/mcp"
+
+# Off until the user sets GITHUB_PERSONAL_ACCESS_TOKEN and opts in.
+[mcp_servers.github]
+enabled = false
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"
+http_headers = { "X-MCP-Toolsets" = "context,repos,issues,pull_requests,actions" }
+default_tools_approval_mode = "writes"

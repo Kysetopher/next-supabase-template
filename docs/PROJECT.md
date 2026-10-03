@@ -67,6 +67,8 @@ open-next.config.ts        OpenNext build config (defaults)
 cloudflare-bindings.d.ts   types for the bindings in wrangler.jsonc
 docs/                      all documentation — start at DOCS.md
 .claude/skills/            agent skills for Claude Code — SKILLS.md
+.mcp.json                  Claude Code MCP servers: Supabase (dev, read-only), Cloudflare, GitHub — MCP.md
+.codex/config.toml         the same MCP servers for Codex (trusted projects) — MCP.md
 .agents/skills/            the same skills for Codex and other agents (npm run skills:sync)
 skills-lock.json           pinned versions of installed skill sets (Supabase, Cloudflare)
 .github/workflows/ci.yml   typecheck, lint, build, smoke tests, Cloudflare Workers build
@@ -97,7 +99,7 @@ Create a repository from the template on GitHub (**Use this template**), clone i
 
 > Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
 
-[SETUP.md](SETUP.md) walks the agent through everything: dependencies, env vars, linking the hosted Supabase project and pushing migrations, the dashboard settings, rebranding, optional payments, checks, a first sign-up, and points to the deploy runbook.
+[SETUP.md](SETUP.md) walks the agent through everything: dependencies, env vars, linking the hosted Supabase project and pushing migrations, connecting the agent's MCP tools, the dashboard settings, rebranding, optional payments, checks, a first sign-up, and points to the deploy runbook.
 
 ## Deploy
 
