@@ -50,7 +50,7 @@ Details: [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md).
 
 1. `src/lib/site.ts` — app name and description.
 2. `src/app/globals.css` — color tokens in `:root` (`--primary` is the one brand color).
-3. `src/app/icon.*` / `favicon.ico` — replace the icon.
+3. `src/app/favicon.ico` — replace the icon.
 4. Add pages under `src/app/(protected)/` — they're protected automatically; add public ones to `PUBLIC_ROUTES` in `src/middleware.ts`.
 5. Every new table: copy the shape of `profiles` in `supabase/migrations/*_profiles_and_avatars.sql` — RLS on, one policy per allowed operation on `(select auth.uid())`, narrow grants, `references auth.users(id) on delete cascade`. New user-owned storage buckets also need a `deleteUserFiles()` call in `deleteAccount()`. Run `npm run db:types` after migrations.
 

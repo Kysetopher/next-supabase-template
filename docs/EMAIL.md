@@ -42,8 +42,8 @@ Instructions for an AI coding agent to send this project's auth emails through R
 
    Leave any other field at its default. Save.
 10. **USER STEP — email rate limit.** **Authentication → Rate Limits**: the limit for emails sent per hour, now editable, starts at **30**. Set it to what a busy hour could need, but not above what the Resend plan sends (the free plan's 100 a day means 30 an hour is plenty; raise it on a paid plan). The app's own per-address limits ([AUTH.md](AUTH.md)) still apply on top.
-11. **USER STEP — email templates.** **Authentication → Emails → Templates** (new free-plan projects can only edit them once custom SMTP is on, so if this was blocked during setup, do it now). Show the user each file's contents to copy:
-    - **Reset Password:** subject `Your password reset code`, body `supabase/templates/recovery.html`. It must show `{{ .Token }}`: the reset page asks for the 6-digit code, not a link.
+11. **USER STEP — turn on confirmation and set the templates.** **Authentication → Sign In / Providers:** under **User Signups**, turn **Confirm email on** (setup left it off because the built-in email only reached the team) and save. Then **Authentication → Emails → Templates** (new free-plan projects can only edit them once custom SMTP is on). Show the user each file's contents to copy:
+    - **Reset Password:** subject `Your password reset code`, body `supabase/templates/recovery.html`. It shows `{{ .Token }}`, a 6-digit code entered on `/reset-password`, which works on any device (the default link email also works, via `/auth/recovery`, but only in the browser that asked).
     - **Confirm signup:** subject `Confirm your email`, body `supabase/templates/confirmation.html`.
 
     Save each.

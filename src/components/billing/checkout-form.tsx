@@ -25,6 +25,8 @@ function getStripe(publishableKey: string) {
  * Fallbacks: the values in src/app/globals.css :root. Used during server
  * render and if a token can't be read.
  */
+// Mirrors the tokens in src/app/globals.css :root — keep in sync when rebranding
+// (used before the CSS variables can be read, e.g. on the server).
 const FALLBACK = {
   "--primary": "#5b6cf0",
   "--input": "#242426",

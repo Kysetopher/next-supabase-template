@@ -45,4 +45,5 @@
 - Import via the `@/*` alias (maps to `src/*`), not relative `../../` chains.
 - `src/lib/` stays server-safe and framework-agnostic; client-side hooks go under `src/hooks/`.
 - This is a reusable template: never hard-code a product, client or brand name. The app's name comes from `site` in `src/lib/site.ts`; colors from the tokens.
+- Never run Next's `middleware-to-proxy` codemod, whatever `next dev` / `next build` suggest: the Cloudflare adapter (OpenNext) only fully supports `src/middleware.ts` ([CLOUDFLARE.md](CLOUDFLARE.md) "Middleware, not proxy").
 - Next.js 16 has breaking changes from older versions — read the relevant guide in `node_modules/next/dist/docs/` before writing framework code.

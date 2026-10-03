@@ -3,6 +3,9 @@
 import { useEffect } from "react";
 
 /**
+ * Colors repeat the tokens in src/app/globals.css :root (this page gets no
+ * stylesheet) — keep them in sync when rebranding.
+ *
  * Replaces the root layout when it (or something above every error.tsx)
  * throws, so it renders its own document and gets none of globals.css —
  * styles are inline, with the same values as the theme tokens.

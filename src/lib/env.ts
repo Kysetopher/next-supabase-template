@@ -7,7 +7,7 @@
  * `process.env.X!`. See .env.example for where each value comes from.
  */
 const VARS = {
-  SUPABASE_URL: "your Supabase project URL (Dashboard > Settings > API)",
+  SUPABASE_URL: "your Supabase project URL (Dashboard > Connect, or Integrations > Data API > API URL)",
   SUPABASE_PUBLISHABLE_KEY: "the publishable key (Dashboard > Settings > API Keys)",
   SUPABASE_SECRET_KEY: "the secret key (Dashboard > Settings > API Keys)",
   SITE_URL: "the origin this app is served from, e.g. http://localhost:3000",
@@ -28,6 +28,15 @@ function problem(name: EnvName, value: string | undefined): string | null {
     if (name === "SITE_URL" && (value.endsWith("/") || url.pathname !== "/")) {
       return `SITE_URL must be an origin with no path or trailing slash (got "${value}")`;
     }
+  }
+  // Catch the two Supabase keys swapped: the publishable one is committed in
+  // wrangler.jsonc, so a secret key pasted there would be published. Legacy
+  // anon/service_role JWTs (eyJ…) are still accepted.
+  if (name === "SUPABASE_PUBLISHABLE_KEY" && !/^(sb_publishable_|eyJ)/.test(value.trim())) {
+    return "SUPABASE_PUBLISHABLE_KEY must start with sb_publishable_ — is the secret key in its place?";
+  }
+  if (name === "SUPABASE_SECRET_KEY" && !/^(sb_secret_|eyJ)/.test(value.trim())) {
+    return "SUPABASE_SECRET_KEY must start with sb_secret_ — is the publishable key in its place?";
   }
   return null;
 }

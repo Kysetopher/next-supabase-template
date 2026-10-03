@@ -21,7 +21,7 @@ An unbranded starting point for web apps: Next.js 16 (App Router) + TypeScript +
 | `/` | public | Landing page |
 | `/login`, `/signup` | signed-out only | Credentials forms |
 | `/signup/check-email`, `/forgot-password`, `/reset-password` | public | Email confirmation and password reset by code |
-| `/auth/callback`, `/auth/email-change` | public | PKCE landing routes for emailed links |
+| `/auth/callback`, `/auth/email-change`, `/auth/recovery` | public | PKCE landing routes for emailed links (signup, email change, password reset) |
 | `/dashboard` | signed in | App home after sign-in |
 | `/account` | signed in | Email, password, billing, log out, delete account |
 | `/components` | signed in | Live gallery of every UI component |

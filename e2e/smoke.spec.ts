@@ -58,3 +58,9 @@ test("security headers are sent", async ({ request }) => {
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
 });
+
+test("a reset link without a code goes back to forgot-password with a fixed message", async ({ page }) => {
+  await page.goto("/auth/recovery");
+  await expect(page).toHaveURL(/\/forgot-password\?error=invalid_link$/);
+  await expect(page.locator("form").getByRole("alert")).toHaveText("That link is invalid or has expired.");
+});

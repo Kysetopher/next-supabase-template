@@ -16,7 +16,8 @@ If setup stopped partway (the chat was closed, the app restarted, something fail
 - **Stop at every USER STEP.** Tell the user exactly what to do, in plain language with the exact clicks or command, then wait for them to say they're done.
 - **Never ask for secrets in chat.** Keys and passwords go straight into `.env.local` (typed by the user in a text editor) or into a terminal prompt. Never print, read aloud, or commit `.env.local`. To check it, run `npm run check:env`, which reports problems without showing values.
 - **Hosted Supabase only.** Never run a local database: no `supabase start`, `supabase db reset`, or Docker. Every database command targets the user's hosted project.
-- **Interactive commands are the user's.** Commands that open a browser or ask for a password (`supabase login`, `supabase link`, `db:push`) are USER STEPs: give the exact command and have the user run it in a terminal opened in the project folder (the agent app's terminal if it has one; otherwise Terminal on macOS, or PowerShell on Windows via right-click in the folder → **Open in Terminal**).
+- **Interactive commands are the user's.** Commands that open a browser or wait for a confirmation (`supabase login`, `supabase link`, `db:push`) are USER STEPs: give the exact command and have the user run it in a terminal opened in the project folder (the agent app's terminal if it has one; otherwise Terminal on macOS, or PowerShell on Windows via right-click in the folder → **Open in Terminal**).
+- **Never run the middleware-to-proxy codemod.** `next dev` / `next build` print a notice that `middleware` is deprecated and suggest `npx @next/codemod@canary middleware-to-proxy`. That's expected here: the Cloudflare adapter (OpenNext) only fully supports `src/middleware.ts` (docs/CLOUDFLARE.md "Middleware, not proxy"). Ignore the notice.
 - **Explain as you go**, briefly: what you're about to do and why, in words a non-developer follows.
 - **MCP tools: development Supabase only, read-only, ask before writes.** Never connect a tool to the production Supabase project or write to production. Every sign-in (OAuth windows, approving servers, tokens, browser extensions) is a USER STEP; never ask for a token or write one into a file. Ask before any MCP tool call that writes or deletes. Details: docs/MCP.md.
 - Use the shell the user has (PowerShell on Windows, bash/zsh on macOS and Linux).
@@ -48,7 +49,7 @@ Check the folder **your** agent reads:
 
 - **Claude Code:** `.claude/skills/` must contain all eight.
 - **Codex** (and other agents that use `.agents/skills/`): `.agents/skills/` must contain all eight. If the project's own three are missing there, run `npm run skills:sync`.
-- **Any other agent with its own skills folder:** install the Supabase and Cloudflare sets for it with the commands below, replacing `-a claude-code codex` with `-a <agent-id>` (`npx skills add --help` lists agent ids), and copy the project's three skills from `.claude/skills/` into that folder.
+- **Any other agent with its own skills folder:** install the Supabase and Cloudflare sets for it with the commands below, replacing `-a claude-code codex` with `-a <agent-id>` (agent ids: the **Supported Agents** table at https://github.com/vercel-labs/skills), and copy the project's three skills from `.claude/skills/` into that folder.
 
 If one of the installed skills is missing anywhere, restore its set with:
 
@@ -68,9 +69,9 @@ If `.env.local` doesn't exist, copy `.env.example` to `.env.local` (PowerShell: 
 
 **USER STEP — fill in `.env.local`.** Tell the user:
 
-1. Open their project in the Supabase dashboard (https://supabase.com/dashboard). If they don't have one yet: **New project**, pick a name, a strong database password (have them save it in a password manager — they'll need it in step 5) and the region closest to their users.
+1. Open their project in the Supabase dashboard (https://supabase.com/dashboard). If they don't have one yet: **New project**, pick a name, a strong database password (have them save it in a password manager — the app doesn't need it, but Supabase support and direct database tools do) and the region closest to their users.
 2. Open `.env.local` (in the project folder) with a text editor — Notepad on Windows, TextEdit on macOS — and paste in:
-   - `SUPABASE_URL` — **Project Settings → Data API → Project URL** (looks like `https://<ref>.supabase.co`).
+   - `SUPABASE_URL` — click **Connect** at the top of the project (or **Integrations → Data API → API URL**); it looks like `https://<ref>.supabase.co`.
    - `SUPABASE_PUBLISHABLE_KEY` — **Project Settings → API Keys → Publishable key**.
    - `SUPABASE_SECRET_KEY` — same page, **Secret keys** (click reveal). This one bypasses all security rules: never share it.
    - Leave `SITE_URL=http://localhost:3000` as it is.
@@ -100,21 +101,21 @@ npx supabase login
 npx supabase link --project-ref <ref>
 ```
 
-(Asks for the **database password** from step 4.)
+(Links the CLI to the project. It uses the login from the previous command; no password needed.)
 
 ```bash
 npm run db:push
 ```
 
-(Asks for the database password again, then shows the migrations to apply — answer `Y`.) This creates the auth rate-limit tables, `profiles` with the avatars storage bucket, and the billing tables.
+(Shows the migrations to apply — answer `Y`.) This creates the auth rate-limit tables, `profiles` with the avatars storage bucket, and the billing tables.
 
-Then verify it worked — this needs no password:
+Then verify it worked:
 
 ```bash
 npm run db:types
 ```
 
-It must succeed, and `src/lib/supabase/types.ts` must contain `profiles`, `auth_email_limits` and `billing_customers`. If the user saw errors, have them paste the error text (not passwords) and fix from there.
+It must succeed, and `src/lib/supabase/types.ts` must contain `profiles`, `auth_email_limits` and `billing_customers`. If the user saw errors, have them paste the error text and fix from there.
 
 ## 6. Connect the agent's tools (MCP)
 
@@ -122,13 +123,13 @@ MCP servers give you tools beyond the shell: the development database (read-only
 
 **Which agent are you?** Use what you know about yourself; if unsure, ask the user which app they're using. The config files are `.mcp.json` (Claude Code: the CLI and the desktop app's Code tab) and `.codex/config.toml` (Codex: CLI, IDE extension, ChatGPT desktop app).
 
-**Fill in the development project ref** (from step 5) in **both** files, so either agent works on this project later: replace `__SUPABASE_DEV_PROJECT_REF__` in the `supabase` URL. Change nothing else in the URL — it must keep `read_only=true`. Never use a production ref. Confirm both files still parse (`node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8'))"`) and that the placeholder is gone from both.
+**Fill in the development project ref** (from step 5) in **both** files, so either agent works on this project later: replace `__SUPABASE_DEV_PROJECT_REF__` in the `supabase` URL. Change nothing else in the URL — it must keep `read_only=true`. Never use a production ref. Confirm `.mcp.json` still parses (`node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8'))"`), the placeholder is gone from both files, and `git diff -- .mcp.json .codex/config.toml` shows exactly one changed line in each.
 
 **USER STEP — approve and sign in.** MCP servers load when a session starts, so first have the user restart and come back to this same conversation, then continue from here: Claude Code CLI — quit and run `claude --continue` in the project folder; Codex CLI — quit and run `codex resume --last`; a desktop app — quit it fully, reopen it and open this conversation from the sidebar. Then walk them through the steps for their agent, one at a time:
 
 - **Claude Code / Claude desktop Code tab:**
   1. When asked whether to use this project's MCP servers, approve `supabase`, `cloudflare-docs`, `cloudflare-observability` and `cloudflare-builds`. (`github` comes below.)
-  2. Run `/mcp`, select `supabase` → **Authenticate**, and finish the Supabase sign-in in the browser. Then the same for `cloudflare-observability` and `cloudflare-builds` (a Cloudflare account is free; if they don't have one yet, they can do this after deploying).
+  2. Run `/mcp`, select `supabase` and finish the sign-in in the browser (or run `claude mcp login supabase` in a terminal). Then the same for `cloudflare-observability` and `cloudflare-builds` (a Cloudflare account is free; if they don't have one yet, they can do this after deploying).
   3. If `/mcp` also lists a Supabase connector from their claude.ai account, have them turn it off for this project — it isn't limited to the development project.
 - **Codex (CLI, IDE extension or ChatGPT desktop app):**
   1. Trust the project when Codex asks (it only reads `.codex/config.toml` in trusted projects; if they declined earlier, see Troubleshooting in docs/MCP.md).
@@ -136,7 +137,7 @@ MCP servers give you tools beyond the shell: the development database (read-only
 
 Check it worked: `/mcp` (Claude) or `codex mcp list` (Codex) shows the servers connected. Then make one read-only call — list the tables on the Supabase server — and confirm `profiles` is there. If a server fails, see Troubleshooting in docs/MCP.md.
 
-**GitHub (optional; default no).** Ask whether they want the agent to read issues, pull requests and CI runs on GitHub. It needs a personal access token: if yes, follow "Why GitHub uses a token" in docs/MCP.md — the token is created and saved by the user as the environment variable `GITHUB_PERSONAL_ACCESS_TOKEN`, never pasted in the chat. Then for Claude they approve `github` (`/mcp`), and for Codex you set `enabled = true` under `[mcp_servers.github]` in `.codex/config.toml` and they restart Codex.
+**GitHub (optional; default no).** Ask whether they want the agent to read issues, pull requests and CI runs on GitHub. It needs a personal access token: if yes, follow "Why GitHub uses a token" in docs/MCP.md — the token is created and saved by the user as the environment variable `GITHUB_PERSONAL_ACCESS_TOKEN`, never pasted in the chat. Then for Claude they approve `github` (`/mcp`; if they declined it at the first prompt, run `claude mcp reset-project-choices` and restart), and for Codex you set `enabled = true` under `[mcp_servers.github]` in `.codex/config.toml` and they restart Codex.
 
 **Browser.** In the Claude desktop Code tab and the ChatGPT desktop app, use the built-in browser for this app; nothing to install. Otherwise ask whether they want browser tools (default no — they can add them later):
 
@@ -149,7 +150,7 @@ Everything here works on Supabase's **free plan with its built-in email** — no
 
 **USER STEP — change three settings** in the Supabase dashboard. Walk through them one at a time:
 
-1. **Authentication → Sign In / Providers → Email:** turn **Confirm email off** (so anyone can sign up and use the app straight away — EMAIL.md turns it back on once real email works), and turn **Secure email change** and **Secure password change** on. Save.
+1. **Authentication → Sign In / Providers:** under **User Signups**, turn **Confirm email off** (so anyone can sign up and use the app straight away — EMAIL.md turns it back on once real email works). Then open **Email** and turn **Secure email change** and **Secure password change** on. Save.
 2. **Authentication → URL Configuration:** set **Site URL** to `http://localhost:3000`, and add these three **Redirect URLs**: `http://localhost:3000/auth/callback`, `http://localhost:3000/auth/email-change` and `http://localhost:3000/auth/recovery`. Save.
 3. **Database → Extensions:** confirm `pg_cron` is enabled (the migration enables it; this just checks).
 
@@ -162,7 +163,7 @@ Tell them: when the app goes live, the deployed address needs its own Site URL a
 Ask the user, one question at a time:
 
 1. **The app's name** and a **one-sentence description** → set `name` and `description` in `src/lib/site.ts`.
-2. **The brand color** (a hex value like `#2f7cf6`, or a color name you turn into one) → in `src/app/globals.css` `:root`, set `--primary` to it, `--ring` to a much darker shade of it, `--accent` to a very dark tint of it (a dark surface, near `--background`), and `--chart-1` … `--chart-5` to a dark-to-light ramp of that hue (`--chart-3` = the color). Keep `--primary-foreground` readable on it (white on dark/saturated colors, near-black on light ones).
+2. **The brand color** (a hex value like `#2f7cf6`, or a color name you turn into one) → in `src/app/globals.css` `:root`, set `--primary` to it, `--ring` to a much darker shade of it, `--accent` to a very dark tint of it (a dark surface, near `--background`), and `--chart-1` … `--chart-5` to a dark-to-light ramp of that hue (`--chart-3` = the color). Set `--primary-foreground` to whichever of `#ffffff` or `#0a0a0a` has the higher contrast on `--primary` (aim for at least 4.5:1). Then put the same `--primary` / `--primary-foreground` / `--ring` values in `FALLBACK` in `src/components/billing/checkout-form.tsx`, and the button `background` / `color` in `src/app/global-error.tsx` — they can't read CSS variables.
 3. **An icon** (optional): if they have one, replace `src/app/favicon.ico`.
 
 Then replace the opening paragraph of `docs/PROJECT.md` with one describing their project (keep the rest).
@@ -171,7 +172,7 @@ Then replace the opening paragraph of `docs/PROJECT.md` with one describing thei
 
 Ask whether they want Stripe payments **now**. The default is **no** — billing stays off and can be turned on later.
 
-If yes, follow **Setup** in docs/STRIPE.md. The same rules apply: the user types the Stripe keys into `.env.local` themselves (USER STEP), you check them with `npm run check:env`, and the products go in `src/lib/billing/products.ts`.
+If yes, follow the **Turn on payments (agent runbook)** section of docs/STRIPE.md, steps 1–11, then come back to step 10.
 
 ## 10. Check everything
 
@@ -192,6 +193,8 @@ npx playwright install chromium
 ```bash
 npm run test:e2e
 ```
+
+If the only failures are "Tearing down … exceeded the test timeout", the pages themselves passed — run it once more.
 
 ## 11. Try it
 
@@ -241,7 +244,7 @@ Tell the user which steps are already done (one line) and which step you're star
 - **No reset email arrived:** Supabase's built-in email only reaches members of the Supabase team (use the Supabase account's email) and sends a couple an hour; check spam and wait. To email anyone else, connect real email ([EMAIL.md](EMAIL.md)). The app's own limit is 3 emails an hour per address.
 - **"Opened in a different browser":** emailed links (reset, email change, signup confirmation once it's on) only work in the browser that asked for them. Request a new one from that browser.
 - **The Supabase project is paused** (free projects pause after a period of inactivity): have the user open the dashboard and click **Restore**, wait for it to come back, then retry.
-- **`db:push` asks for a password and fails:** it's the **database password** from creating the project, not their Supabase account password. They can reset it in **Project Settings → Database**.
+- **`db:push` or `link` fails with a permissions or login error:** run `npx supabase login` again (the CLI uses that login, not a password), then retry.
 - **The agent's tools stopped working after a restart:** they may need approving or signing in again — see [MCP.md](MCP.md).
 
 ## Done

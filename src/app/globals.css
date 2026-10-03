@@ -6,7 +6,9 @@
  * Theme tokens — one fixed dark theme, neutral by default. Rebrand a project
  * by changing the values in :root only; every component reads these through
  * the semantic utilities (bg-background, text-primary, border-border, ...),
- * never raw colors, so nothing else needs touching. If you're about to add a
+ * never raw colors. Two files repeat the values because they can't read CSS
+ * variables — src/app/global-error.tsx and FALLBACK in
+ * src/components/billing/checkout-form.tsx — so update them too. If you're about to add a
  * `dark:` variant anywhere, reference a token below instead.
  *
  * background, muted, card, popover, secondary form an elevation ladder (each
@@ -49,7 +51,7 @@
 
   --input: #242426;
 
-  /* Chart ramp, light-to-dark steps of the primary hue. */
+  /* Chart ramp, dark-to-light steps of the primary hue. */
   --chart-1: #2a3170;
   --chart-2: #3a46a3;
   --chart-3: #5b6cf0;

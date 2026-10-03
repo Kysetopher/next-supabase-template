@@ -65,7 +65,7 @@ macOS / Linux:
 codex mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --isolated --no-usage-statistics
 ```
 
-Windows — add to `%USERPROFILE%\.codex\config.toml`:
+Windows — add to `%USERPROFILE%\.codex\config.toml` (from the [official client configurations](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/client-configurations.md), plus `--isolated --no-usage-statistics`: a throwaway browser profile, and no usage reporting):
 
 ```toml
 [mcp_servers.chrome-devtools]
@@ -100,7 +100,7 @@ The agent still asks before each write. Supabase recommends development branches
 Both read `.mcp.json`.
 
 1. Open the project. Claude Code asks once whether to use the project's MCP servers: approve `supabase` and the three `cloudflare-*`; approve `github` only if the token is set. (To ask again: `claude mcp reset-project-choices`.)
-2. Sign in: run `/mcp`, select `supabase` → **Authenticate**, finish in the browser; the same for `cloudflare-observability` and `cloudflare-builds` (one Cloudflare sign-in each, choosing the account). From a terminal, `claude mcp login <name>` does the same.
+2. Sign in: run `/mcp`, select `supabase` and finish the sign-in in the browser (or `claude mcp login supabase` in a terminal); the same for `cloudflare-observability` and `cloudflare-builds` (one Cloudflare sign-in each, choosing the account). From a terminal, `claude mcp login <name>` does the same.
 3. Check: `/mcp` (or `claude mcp list`) shows each server connected.
 
 **Claude desktop connectors.** Connectors added in the Claude app (**Settings → Connectors**, the directory) are account-wide and also reach Claude Code sessions. Their Supabase and Cloudflare connectors aren't scoped to one project or read-only, so for this project use the `.mcp.json` servers and keep those connectors off: in the CLI, `/mcp` toggles a connector off for this project only; in the desktop app, disconnect it under **Settings → Connectors**. A project server pointing at the same URL as a connector replaces it; ours differ by their query string, so both would show. The Chat tab can use connectors for questions, but it never works on this project's files.
@@ -127,7 +127,7 @@ All three share the config: the user's `~/.codex/config.toml`, plus the project'
 ## Troubleshooting
 
 - **`supabase` fails to connect right after cloning:** the ref is still `__SUPABASE_DEV_PROJECT_REF__`. Run SETUP step 6, or replace it in both files with the development ref (the subdomain of `SUPABASE_URL`).
-- **Shows "needs authentication":** sign in again — `/mcp` → the server → **Authenticate** (Claude), or `codex mcp login <name>`.
+- **Shows "needs authentication":** sign in again — `/mcp` → the server, then finish the browser sign-in (Claude; or `claude mcp login <name>`), or `codex mcp login <name>`.
 - **Claude doesn't show the project servers:** they were declined earlier. `claude mcp reset-project-choices`, then reopen the project.
 - **Codex doesn't show them:** the project isn't trusted. Check its entry under `[projects]` in `~/.codex/config.toml`.
 - **`github` fails to connect or returns 401:** `GITHUB_PERSONAL_ACCESS_TOKEN` isn't visible to the app (`.mcp.json` defaults it to empty so the other servers still load). Set it as above and restart the app completely; check the token hasn't expired and covers this repository.
@@ -137,4 +137,4 @@ All three share the config: the user's `~/.codex/config.toml`, plus the project'
 
 ## Sources
 
-[Claude Code MCP](https://code.claude.com/docs/en/mcp) · [Claude desktop Code tab](https://code.claude.com/docs/en/desktop) · [Claude in Chrome](https://code.claude.com/docs/en/chrome) · [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp) · [Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference) · [Codex browser](https://learn.chatgpt.com/docs/browser) · [Supabase MCP](https://supabase.com/docs/guides/getting-started/mcp) · [Cloudflare MCP servers](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/) · [GitHub MCP server](https://github.com/github/github-mcp-server) · [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp)
+[Claude Code MCP](https://code.claude.com/docs/en/mcp) · [Claude desktop Code tab](https://code.claude.com/docs/en/desktop) · [Claude in Chrome](https://code.claude.com/docs/en/chrome) · [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp) · [Codex config reference](https://learn.chatgpt.com/docs/config-file/config-reference) · [Codex browser](https://learn.chatgpt.com/docs/browser) · [Supabase MCP](https://supabase.com/docs/guides/getting-started/mcp) · [Cloudflare MCP servers](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/) · [GitHub MCP server](https://github.com/github/github-mcp-server) · [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) ([client configurations](https://github.com/ChromeDevTools/chrome-devtools-mcp/blob/main/docs/client-configurations.md))

@@ -8,22 +8,22 @@ The user starts this by pasting into their AI agent:
 
 > Turn on Stripe payments for this project: read docs/STRIPE.md and follow the "Turn on payments" runbook step by step. Stop and wait for me at every USER STEP.
 
-**Rules for the agent:** the same as [SETUP.md](SETUP.md) — go in order, stop at every USER STEP, never ask for keys in chat (the user types them into `.env.local`; check with `npm run check:env`), never print or commit `.env.local`, hosted Supabase only. Use Stripe **test mode** throughout; going live is a separate, deliberate step the user asks for.
+**Rules for the agent:** the same as [SETUP.md](SETUP.md) — go in order, stop at every USER STEP, never ask for keys in chat (the user types them into `.env.local`; check with `npm run check:env`), never print or commit `.env.local`, hosted Supabase only. Use a Stripe **sandbox** (test mode) throughout; going live is a separate, deliberate step the user asks for.
 
-1. **USER STEP — Stripe account.** If they don't have one: sign up at https://dashboard.stripe.com/register. Have them switch the dashboard to **test mode**.
+1. **USER STEP — Stripe account.** If they don't have one: sign up at https://dashboard.stripe.com/register. Have them work in a **sandbox** (Stripe's test environment): account picker (top left) → **Sandboxes**, open or create one. All of this runbook happens there; its keys start with `sk_test_` / `pk_test_`.
 2. **Ask what they sell.** For each product: a name, a one-line description, the price, and whether it's a **subscription** (monthly/yearly) or a **one-time** payment. Pick a short stable key for each (e.g. `pro`).
 3. **USER STEP — create the products in Stripe** (*Product catalog → Add product*), one per item from step 2, with the matching recurring or one-time price. Have them copy each price's id (`price_…`) into `.env.local` as `STRIPE_PRICE_<KEY>` — not into the chat.
 4. **Add them to the catalog** in `src/lib/billing/products.ts` (format under **Setup → 1. Products** below), each with `priceEnvVar: "STRIPE_PRICE_<KEY>"`.
-5. **USER STEP — API keys.** From *Developers → API keys* (test mode), have them add `STRIPE_SECRET_KEY` (`sk_test_…`) and `STRIPE_PUBLISHABLE_KEY` (`pk_test_…`) to `.env.local`.
-6. **USER STEP — local webhook.** Have them install the Stripe CLI (https://docs.stripe.com/stripe-cli), then run in a terminal in the project folder `stripe login`, then the `stripe listen …` command under **Local webhooks** below, and copy the `whsec_…` it prints into `.env.local` as `STRIPE_WEBHOOK_SECRET`. That terminal must stay open while testing.
+5. **USER STEP — API keys.** From *Developers → API keys* (in the sandbox), have them add `STRIPE_SECRET_KEY` (`sk_test_…`) and `STRIPE_PUBLISHABLE_KEY` (`pk_test_…`) to `.env.local`.
+6. **USER STEP — local webhook.** Have them install the Stripe CLI (https://docs.stripe.com/stripe-cli), then run in a terminal in the project folder `stripe login`, then the `stripe listen …` command under **Local webhooks** below, and copy the `whsec_…` it prints into `.env.local` as `STRIPE_WEBHOOK_SECRET`. That terminal must stay open while testing. If `stripe login` says CLI access is disabled, an account admin turns it on under **Settings → Team and security → MCP and CLI access**.
 7. **Check.** `npm run check:env` must print `Environment OK.` (it checks all three keys, matching modes and every product's price variable). Then `npm run typecheck`.
 8. **USER STEP — Customer Portal.** *Settings → Billing → Customer portal*: turn on payment method updates, invoice history and cancellation.
 9. **Database.** The billing tables come from `*_billing.sql`, already applied by setup's `db:push`; if `npm run db:types` output lacks `billing_customers`, have the user run `npm run db:push`.
-10. **USER STEP — try it.** Restart `npm run dev`. Have them sign in, open `/checkout?product=<key>`, pay with the test card `4242 4242 4242 4242` (any future date, any CVC), then check `/account` shows the purchase or subscription. If nothing appears, check the `stripe listen` terminal for the event and its response.
+10. **USER STEP — try it.** Start (or restart) `npm run dev` in the background. Have them sign in, open `/checkout?product=<key>`, pay with the test card `4242 4242 4242 4242` (any future date, any CVC), then check `/account` shows the purchase or subscription. If nothing appears, check the `stripe listen` terminal for the event and its response.
 11. **Grant access.** Ask what each product unlocks, and implement it per **Granting access** below (prefer checking `getActiveSubscription()` / `hasPurchased()` where access is needed).
 12. **When they deploy:** the production steps (live keys as Cloudflare Secrets, a webhook endpoint per environment) are in the deploy runbook in [CLOUDFLARE.md](CLOUDFLARE.md) and **Setup → 3** below.
 
-Summarize what's on, which products exist (keys and modes, not ids), and remind them it's all test mode until they go live.
+Summarize what's on, which products exist (keys and modes, not ids), and remind them it's all in the sandbox (test mode) until they go live.
 
 ## Pieces
 
@@ -44,7 +44,7 @@ Summarize what's on, which products exist (keys and modes, not ids), and remind 
 
 ## Setup
 
-1. **Products.** In the Stripe Dashboard (test mode first), create each product and its price under *Product catalog*. Use a recurring price for a subscription and a one-time price for a single purchase. Then list them in `src/lib/billing/products.ts`:
+1. **Products.** In the Stripe Dashboard (in a sandbox first), create each product and its price under *Product catalog*. Use a recurring price for a subscription and a one-time price for a single purchase. Then list them in `src/lib/billing/products.ts`:
 
    ```ts
    const CATALOG = {
@@ -63,7 +63,7 @@ Summarize what's on, which products exist (keys and modes, not ids), and remind 
 
    Setting only some, a wrong prefix (`sk_`/`rk_`, `pk_`, `whsec_`, `price_`), or mixing test and live keys stops the server at startup with a list of what's wrong.
 
-3. **Webhook endpoint.** *Developers → Webhooks → Add endpoint*: `https://<your domain>/api/webhooks/stripe`, subscribed to exactly:
+3. **Webhook endpoint.** Stripe Dashboard → **Workbench → Webhooks → Create an event destination**: events from **Your account**, select exactly these events, destination **Webhook endpoint**, URL `https://<your domain>/api/webhooks/stripe`. Copy its **Signing secret** (Reveal). The events:
 
    ```
    customer.subscription.created

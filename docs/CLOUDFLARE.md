@@ -10,12 +10,12 @@ The [Deploy runbook](#deploy-runbook) is at the end of this file; everything bef
 
 ## How it deploys
 
-The repository is connected to Cloudflare (**Workers & Pages → Create → Import a repository**). On every push to the connected branch, Cloudflare's build servers run:
+The repository is connected to Cloudflare (**Workers & Pages → Create application → Import a repository**). On every push to the connected branch, Cloudflare's build servers run:
 
 - **Build command:** `npx opennextjs-cloudflare build` — runs `npm run build` (`next build`), then turns the output into a Worker (`.open-next/worker.js`) and its static files (`.open-next/assets`).
 - **Deploy command:** `npx wrangler deploy` for production, `npx wrangler deploy --env dev` for the dev Worker — uploads that bundle as configured in [`wrangler.jsonc`](../wrangler.jsonc).
 
-Builds for **non-production branches are turned off** in each project (**Settings → Build → Branch control**). Those builds use a different pair of commands that don't produce a Worker and always fail; pull requests are checked by GitHub Actions instead, and preview URLs are off.
+**Preview builds** (other branches) are turned off in each project (**Settings → Build → Branch control**, untick **Enable Preview Builds**); pull requests are checked by GitHub Actions instead, and preview URLs are off.
 
 CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs the same `npx opennextjs-cloudflare build` after the other checks, so a change that won't bundle for Workers fails the pull request before it reaches a deploy. It needs no secrets or env vars.
 
@@ -29,7 +29,7 @@ CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs the same `np
 | Deploy command | `npx wrangler deploy` | `npx wrangler deploy --env dev` |
 | Domain | e.g. `example.com` | e.g. `dev.example.com`, optionally behind Cloudflare Access |
 | Supabase | the **production** project | the **development** project (the one in `.env.local`) |
-| Stripe | live mode | test mode |
+| Stripe | live mode | sandbox (test mode) |
 | Rate-limit counters | `namespace_id` 1001, 1002 | 2001, 2002 |
 
 Wrangler doesn't inherit `vars` or bindings into an environment, so `env.dev` is complete on its own: its own variables and its own rate-limit counters. A binding missing there fails the deploy instead of quietly using production's.
@@ -55,27 +55,27 @@ The flow once both exist: feature branch → pull request (CI) → merge to `mai
 
 ## Domain and HTTPS
 
-- Add the domain to the Worker under **Settings → Domains & Routes → Add → Custom domain**. The domain's DNS must be on Cloudflare (add the site to the account first). It's set in the dashboard, not `wrangler.jsonc`, so deploys leave it alone.
+- Add the domain on the Worker's **Domains** tab → **+ Add Domain** → Custom domain (older layouts: **Settings → Domains & Routes → Add → Custom domain**). The domain's DNS must be on Cloudflare (add the site to the account first). It's set in the dashboard, not `wrangler.jsonc`, so deploys leave it alone.
 - `SITE_URL` in `vars` must be that origin exactly (`https://example.com`, no trailing slash).
 - Turn on **SSL/TLS → Edge Certificates → Always Use HTTPS** for the zone.
 - `workers_dev: true` serves the Worker at `<name>.<account subdomain>.workers.dev` so the first deploy is reachable. Once the custom domain works, set it to `false` and commit: the app should have one origin. `preview_urls` is `false` from the start — otherwise every old version stays callable at its own URL, running its old code.
 
 ## Cloudflare Access for the dev Worker (optional)
 
-To keep the dev site to your team: **Zero Trust → Access → Applications → Add → Self-hosted**, domain `dev.example.com`, with a policy allowing your team's emails. If the Stripe test webhook points at dev, add a second self-hosted application for the path `dev.example.com/api/webhooks/stripe` with a **Bypass → Everyone** policy (the more specific path wins). Stripe can't sign in to Access; the webhook checks Stripe's signature itself ([STRIPE.md](STRIPE.md)).
+To keep the dev site to your team: **Zero Trust → Access controls → Applications → Create new application → Self-hosted and private**, domain `dev.example.com`, with a policy allowing your team's emails. If the Stripe test webhook points at dev, add a second self-hosted application for the path `dev.example.com/api/webhooks/stripe` with a **Bypass → Everyone** policy (the more specific path wins). Stripe can't sign in to Access; the webhook checks Stripe's signature itself ([STRIPE.md](STRIPE.md)).
 
 ## Supabase
 
 Each Supabase project needs its own domain's URLs under **Authentication → URL Configuration**:
 
 - **Site URL**: that environment's `SITE_URL`.
-- **Redirect URLs**: `<SITE_URL>/auth/callback` and `<SITE_URL>/auth/email-change`, exact, no wildcards. Keep `http://localhost:3000/…` on the development project.
+- **Redirect URLs**: `<SITE_URL>/auth/callback`, `<SITE_URL>/auth/email-change` and `<SITE_URL>/auth/recovery`, exact, no wildcards. Keep `http://localhost:3000/…` on the development project.
 
-The production project also needs the rest of [SETUP.md](SETUP.md) step 7 (email settings, the reset-code template, `pg_cron`) and the migrations (`npm run db:push` while linked to it).
+The production project also needs the rest of [SETUP.md](SETUP.md) step 7 (email settings, `pg_cron`), the migrations (`npm run db:push` while linked to it), and **real email with "Confirm email" on before launch** ([EMAIL.md](EMAIL.md)) — Supabase's built-in email only reaches the project's team, so real users would get no emails.
 
 ## Stripe
 
-One webhook endpoint per environment, each with its own signing secret: live mode → `https://example.com/api/webhooks/stripe` with production's `STRIPE_WEBHOOK_SECRET`; test mode → `https://dev.example.com/api/webhooks/stripe` with dev's. The events are listed in [STRIPE.md](STRIPE.md). The Stripe client already uses the fetch HTTP client and `constructEventAsync`, so nothing else changes on Workers.
+One webhook endpoint per environment, each with its own signing secret: live mode → `https://example.com/api/webhooks/stripe` with production's `STRIPE_WEBHOOK_SECRET`; sandbox (test mode) → `https://dev.example.com/api/webhooks/stripe` with dev's. The events are listed in [STRIPE.md](STRIPE.md). The Stripe client already uses the fetch HTTP client and `constructEventAsync`, so nothing else changes on Workers.
 
 ## Rate limiting
 
@@ -181,7 +181,7 @@ Production gets its own Supabase project, separate from the development one in `
 
 **USER STEP — create it.** In the Supabase dashboard: **New project**, a name (e.g. the app name plus "production"), a strong database password saved in their password manager, the region closest to their users.
 
-Ask for its **Project URL** and **Publishable key** (**Project Settings → API Keys**) — not secret, they go in `wrangler.jsonc`. Its ref is the URL's subdomain.
+Ask for its **API URL** (**Connect** at the top of the project, or **Integrations → Data API**) and **Publishable key** (**Project Settings → API Keys**) — not secret, they go in `wrangler.jsonc`. Confirm the key starts with `sb_publishable_` before writing it (a `sb_secret_` key there would be published). Its ref is the URL's subdomain.
 
 **USER STEP — push the schema to it.** Give the user, one at a time:
 
@@ -199,13 +199,13 @@ npx supabase link --project-ref <development-ref>
 
 The last one links the CLI back to the development project, so everyday `db:push` and `db:types` keep targeting it. (The development ref is the subdomain of `SUPABASE_URL` in `.env.local`; read only that line.)
 
-**USER STEP — dashboard settings** on the production project: the four settings in [SETUP.md](SETUP.md) step 7, except URL Configuration, which waits for step 8.
+**USER STEP — dashboard settings** on the production project: the settings in [SETUP.md](SETUP.md) step 7, except URL Configuration, which waits for step 8. Before launch, real email must be connected and **Confirm email** turned on ([EMAIL.md](EMAIL.md)) — if it isn't yet, tell the user and don't send anyone the live address until it is.
 
 ### 4. Production variables
 
 In `wrangler.jsonc`, uncomment the top-level `vars` and fill in:
 
-- `SITE_URL` — `https://<domain>`, or, with no domain yet, `https://<name>.<account-subdomain>.workers.dev` (the account subdomain is on **Workers & Pages → Overview** once they have an account; fill this in after step 6 if needed).
+- `SITE_URL` — `https://<domain>`, or, with no domain yet, `https://<name>.<account-subdomain>.workers.dev` (shown as **Your subdomain** on the **Workers & Pages** page once they have an account; if they don't have one yet, fill it in after step 5, then commit and release it).
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` — the production project's.
 
 Leave the Stripe lines commented unless billing is going live now (step 9). Never add a secret here.
@@ -219,12 +219,12 @@ From here on, **releasing** a change means: commit it on `main`, then **USER STE
 **USER STEP — create the Worker from the repository.** Walk them through:
 
 1. Sign up or log in at https://dash.cloudflare.com.
-2. **Workers & Pages → Create → Import a repository**, connect GitHub (authorize Cloudflare for the repository), and pick this repository.
+2. **Workers & Pages → Create application → Import a repository → Get started**, connect GitHub (authorize Cloudflare for the repository), and pick this repository.
 3. **Project name:** exactly the `name` from `wrangler.jsonc`.
 4. **Build command:** `npx opennextjs-cloudflare build`. **Deploy command:** `npx wrangler deploy`.
 5. Under the advanced settings (or afterwards in **Settings → Build**), set the **production branch** to `production`.
 6. Create it. The first build starts; it takes a few minutes.
-7. **Settings → Build → Branch control:** turn **off** builds for non-production branches.
+7. **Settings → Build → Branch control:** set the production branch to `production` and untick **Enable Preview Builds**.
 
 If the build fails, have them copy the build log's error (no keys are printed in it) and fix the cause. A name mismatch with `wrangler.jsonc` is the usual one.
 
@@ -238,7 +238,7 @@ Never as type Text: a plain variable is removed by the next deploy.
 
 With a domain:
 
-**USER STEP.** (1) If the domain isn't on Cloudflare yet: **Add a domain** in the dashboard and change the nameservers at the registrar as instructed; wait until it's active. (2) On the Worker: **Settings → Domains & Routes → Add → Custom domain** → the domain. (3) The domain's **SSL/TLS → Edge Certificates → Always Use HTTPS**: on.
+**USER STEP.** (1) If the domain isn't on Cloudflare yet: **Domains → Onboard a domain** in the dashboard and change the nameservers at the registrar as instructed; wait until it's active. (2) On the Worker: **Domains** tab → **+ Add Domain** → Custom domain → the domain (older layouts: **Settings → Domains & Routes → Add → Custom domain**). (3) The domain's **SSL/TLS → Edge Certificates → Always Use HTTPS**: on.
 
 Once `https://<domain>` loads, set `workers_dev` to `false` in `wrangler.jsonc`, ask, commit, and release it.
 
@@ -246,24 +246,24 @@ With no domain yet: skip this step; `workers_dev` stays `true`. Come back to it 
 
 ### 8. Supabase URLs for the domain
 
-**USER STEP.** Production Supabase project → **Authentication → URL Configuration**: **Site URL** = `SITE_URL`; **Redirect URLs**: `<SITE_URL>/auth/callback` and `<SITE_URL>/auth/email-change`. Save.
+**USER STEP.** Production Supabase project → **Authentication → URL Configuration**: **Site URL** = `SITE_URL`; **Redirect URLs**: `<SITE_URL>/auth/callback`, `<SITE_URL>/auth/email-change` and `<SITE_URL>/auth/recovery`. Save.
 
 ### 9. Payments (only if billing goes live now)
 
 Follow [STRIPE.md](STRIPE.md) **Setup** in **live mode** for production: products and prices, the Customer Portal.
 
 1. In `wrangler.jsonc` top-level `vars`: `STRIPE_PUBLISHABLE_KEY` (`pk_live_…`) and each `STRIPE_PRICE_*` (live price ids). Not secrets. Ask and commit, but don't release yet.
-2. **USER STEP:** Stripe → **Developers → Webhooks → Add endpoint**: `<SITE_URL>/api/webhooks/stripe`, with exactly the events listed in STRIPE.md.
+2. **USER STEP:** Stripe Dashboard → **Workbench → Webhooks → Create an event destination**: events from **Your account**, select exactly these events, destination **Webhook endpoint** (the events listed in STRIPE.md), URL `<SITE_URL>/api/webhooks/stripe`; copy its **Signing secret** (Reveal).
 3. **USER STEP:** on the Worker, add Secrets `STRIPE_SECRET_KEY` (`sk_live_…` or a restricted `rk_live_…`) and `STRIPE_WEBHOOK_SECRET` (the endpoint's signing secret).
 4. Release the commit straight away. The Stripe variables are all-or-nothing, so between step 3 and this deploy the site answers with errors.
 
 ### 10. Dev Worker (if they want one)
 
 1. In `wrangler.jsonc` `env.dev.vars`: `SITE_URL` (e.g. `https://dev.<domain>`, or `https://<name>-dev.<account-subdomain>.workers.dev`), and the **development** project's `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (the same values as `.env.local`; read only those two lines). Test-mode Stripe values if billing is on. Ask, commit; **USER STEP:** push `main`.
-2. **USER STEP:** a second **Import a repository** project for the same repository: name `<name>-dev`, build command `npx opennextjs-cloudflare build`, deploy command `npx wrangler deploy --env dev`, production branch `main`; then turn off non-production branch builds.
+2. **USER STEP:** a second **Create application → Import a repository** project for the same repository: name `<name>-dev`, build command `npx opennextjs-cloudflare build`, deploy command `npx wrangler deploy --env dev`, production branch `main`; then turn off non-production branch builds.
 3. **USER STEP:** on `<name>-dev`, Secret `SUPABASE_SECRET_KEY` = the **development** project's secret key (and the Stripe test-mode secrets with billing on).
 4. **USER STEP:** custom domain `dev.<domain>` on `<name>-dev`, as in step 7. Optionally Cloudflare Access ([above](#cloudflare-access-for-the-dev-worker-optional)) — with a Bypass for `/api/webhooks/stripe` if the Stripe test webhook points here.
-5. **USER STEP:** development Supabase project → **URL Configuration**: add `<dev SITE_URL>/auth/callback` and `<dev SITE_URL>/auth/email-change` to Redirect URLs, keeping the localhost ones. Site URL can stay `http://localhost:3000`.
+5. **USER STEP:** development Supabase project → **URL Configuration**: add `<dev SITE_URL>/auth/callback`, `<dev SITE_URL>/auth/email-change` and `<dev SITE_URL>/auth/recovery` to Redirect URLs, keeping the localhost ones. Site URL can stay `http://localhost:3000`.
 6. With billing: a **test-mode** webhook endpoint at `<dev SITE_URL>/api/webhooks/stripe`, its signing secret as the dev Worker's `STRIPE_WEBHOOK_SECRET`.
 
 ### 11. Check it

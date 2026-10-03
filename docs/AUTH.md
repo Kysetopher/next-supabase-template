@@ -16,6 +16,7 @@ Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser S
 | `src/app/(auth)/*` | `/login`, `/signup`, `/signup/check-email`, `/forgot-password`, `/reset-password`. |
 | `src/app/auth/callback` | PKCE exchange for the signup confirmation link. |
 | `src/app/auth/email-change` | PKCE exchange for email-change links. |
+| `src/app/auth/recovery` | PKCE exchange for password-reset links (Supabase's default Reset Password email) → `/account` to set a new password. |
 | `src/app/(protected)/*` | `/dashboard`, `/account`, gated by `requireUser()` in the layout **and** in each page. |
 | `src/lib/url-messages.ts` | `?error=` / `?message=` codes → fixed strings. Never render text from the URL. |
 
@@ -23,18 +24,18 @@ Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser S
 
 | Flow | How | Checks first |
 |---|---|---|
-| **Sign up** | `signUp()` with `emailRedirectTo: SITE_URL/auth/callback`. With "Confirm email" on, lands on `/signup/check-email`; the emailed PKCE link signs them in **in the same browser**. On another device the email is still confirmed and they're told to log in. | 5/min per IP; 3 emails/hour, 10/day per email. |
+| **Sign up** | `signUp()` with `emailRedirectTo: SITE_URL/auth/callback`. With "Confirm email" off (the default until real email is connected — Supabase's built-in email only reaches the project's team), the user is signed in at once. With it on, lands on `/signup/check-email`; the emailed PKCE link signs them in **in the same browser**. On another device the email is still confirmed and they're told to log in. | 5/min per IP; 3 emails/hour, 10/day per email. |
 | **Log in** | `signInWithPassword()`. | 5/min per IP; 10 attempts per email per 15 min (counted before Supabase is called, unknown emails too). |
-| **Forgot password** (`/forgot-password` → `/reset-password`) | `resetPasswordForEmail()` emails a **6-digit code**; `verifyOtp({ type: "recovery" })` signs in, then the password is set. Works on any device. Both pages look identical whether or not the account exists. | 5/min per IP; 3 codes/hour, 10/day per email; 5 guesses per code. |
+| **Forgot password** (`/forgot-password` → `/reset-password` or `/auth/recovery`) | `resetPasswordForEmail(email, { redirectTo: SITE_URL/auth/recovery })`. Supabase's **default** email carries a link: `/auth/recovery` exchanges it (PKCE, same browser) and lands on `/account`, where the fresh recovery sign-in can set a password without the current one. With the template edited to show `{{ .Token }}` (needs custom SMTP on new free projects), it carries a **6-digit code** instead: `verifyOtp({ type: "recovery" })` on `/reset-password`, which works on any device. Both pages look identical whether or not the account exists. | 5/min per IP; 3 codes/hour, 10/day per email; 5 guesses per code. |
 | **Change password** (`/account`) | `updateUser({ password })`. | Current password (real `signInWithPassword`, burst-limited per account), **or** an emailed-code sign-in in the last 10 min (`hasFreshEmailSignIn()`, from the JWT `amr` claim). |
 | **Change email** (`/account`) | `updateUser({ email })` with a PKCE link to `/auth/email-change`. | Same identity check as change password; per-email send limit on the new address. |
 | **Delete account** (`/account`) | Type the account email, then `auth.admin.deleteUser()` via the service client. App tables should `references auth.users(id) on delete cascade`. | Confirmation must match the **session's** email. |
 
 ## Supabase dashboard settings this depends on
 
-1. **Authentication → Providers → Email**: "Confirm email" **on**; "Secure email change" **on**; "Secure password change" (require reauthentication) **on**.
-2. **Authentication → Email Templates → Reset Password**: show the code, not the link — e.g. `<p>Your code is <strong>{{ .Token }}</strong></p>`. If it still shows `{{ .ConfirmationURL }}` the reset page has nothing to type.
-3. **Authentication → URL Configuration**: Site URL = `SITE_URL`; Redirect URLs include `SITE_URL/auth/callback` and `SITE_URL/auth/email-change` (otherwise Supabase sends links to the Site URL and the flows never complete). Each deployed domain needs its own two Redirect URLs, in the Supabase project that environment uses ([CLOUDFLARE.md](CLOUDFLARE.md)).
+1. **Authentication → Sign In / Providers**: "Confirm email" (under **User Signups**) **off** while on Supabase's built-in email (it only reaches the project's team), **on** once real email is connected ([EMAIL.md](EMAIL.md)) — required before launch; "Secure email change" **on**; "Secure password change" (require reauthentication) **on**.
+2. **Authentication → Emails → Templates → Reset Password** (optional): the default sends a link, which works via `/auth/recovery`. Showing the code instead — `supabase/templates/recovery.html`, `{{ .Token }}` — lets reset work on another device; new free projects can only edit templates once custom SMTP is on.
+3. **Authentication → URL Configuration**: Site URL = `SITE_URL`; Redirect URLs include `SITE_URL/auth/callback`, `SITE_URL/auth/email-change` and `SITE_URL/auth/recovery` (otherwise Supabase sends links to the Site URL and the flows never complete). Each deployed domain needs its own three Redirect URLs, in the Supabase project that environment uses ([CLOUDFLARE.md](CLOUDFLARE.md)).
 4. **Database → Extensions**: `pg_cron` (the migration enables it; it prunes old limit rows nightly).
 5. Run `supabase/migrations/*_auth_limits.sql` (`npx supabase db push`, or paste it into the SQL editor).
 6. **Authentication → Emails → SMTP Settings**: custom SMTP (Resend) for real users, then **Authentication → Rate Limits** for the hourly email limit. See **Production email** below.

@@ -14,6 +14,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // Fewer parallel browsers locally: on Windows the default sometimes times
+  // out tearing a page down even though the test passed.
+  workers: process.env.CI ? undefined : 2,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: {
     baseURL: `http://localhost:${PORT}`,
@@ -25,12 +28,13 @@ export default defineConfig({
     command: process.env.CI ? `npm run start -- -p ${PORT}` : `npm run build && npm run start -- -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
-    timeout: 180_000,
+    // Local runs include `next build`, which takes ~2 minutes with the Cloudflare dev setup.
+    timeout: 360_000,
     env: {
       // Deliberately unreachable (.invalid never resolves): no database at all.
       SUPABASE_URL: "http://supabase.invalid",
-      SUPABASE_PUBLISHABLE_KEY: "placeholder",
-      SUPABASE_SECRET_KEY: "placeholder",
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_placeholder",
+      SUPABASE_SECRET_KEY: "sb_secret_placeholder",
       SITE_URL: `http://localhost:${PORT}`,
     },
   },
