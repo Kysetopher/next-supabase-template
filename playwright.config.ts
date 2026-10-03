@@ -7,7 +7,7 @@ const PORT = 3100;
  * placeholder URL below refuses connections, so every visitor is treated as
  * signed out. That's enough to check pages render, protected routes redirect
  * and the security headers are sent. Tests that need a real session belong
- * in a separate suite pointed at a local `npm run db:start` stack.
+ * in a separate suite pointed at the development Supabase project.
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -27,7 +27,8 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 180_000,
     env: {
-      SUPABASE_URL: "http://127.0.0.1:54399",
+      // Deliberately unreachable (.invalid never resolves): no database at all.
+      SUPABASE_URL: "http://supabase.invalid",
       SUPABASE_PUBLISHABLE_KEY: "placeholder",
       SUPABASE_SECRET_KEY: "placeholder",
       SITE_URL: `http://localhost:${PORT}`,

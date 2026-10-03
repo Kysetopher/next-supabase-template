@@ -13,9 +13,9 @@ the same change that changes it.
 
 | skill | covers |
 |---|---|
-| `new-table` | a schema change: `npm run db:new`, the profiles RLS pattern (one policy per operation on `(select auth.uid())`, narrow grants, cascade from `auth.users`), storage buckets, account-deletion cleanup for what doesn't cascade, `db:reset` + `db:types`, security advisors, `db:push` |
+| `new-table` | a schema change: `npm run db:new`, the profiles RLS pattern (one policy per operation on `(select auth.uid())`, narrow grants, cascade from `auth.users`), storage buckets, account-deletion cleanup for what doesn't cascade, `db:push` to the dev project + `db:types`, security advisors, production push after merge |
 | `new-page` | a protected page (still `requireUser()` in the page, sidebar link, robots, smoke test), a public page (`PUBLIC_ROUTES` in `src/proxy.ts`), an API route (own auth check, JSON 401, webhook signature from the raw body), `?error=` / `?message=` codes |
-| `new-component` | a component in `src/components/ui` or a feature module: extend before adding, tokens only, client/server boundary, accessibility, hydration-safe dates, the `/components` gallery entry, keeping the docs-site catalog and screenshots in sync |
+| `new-component` | a component in `src/components/ui` or a feature module: extend before adding, tokens only, client/server boundary, accessibility, hydration-safe dates, the `/components` gallery entry, recapturing the docs-site gallery screenshots |
 
 ## Recommended installed sets
 

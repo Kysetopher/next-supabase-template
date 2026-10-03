@@ -1,6 +1,6 @@
 ---
 name: new-component
-description: Use when adding or extending a UI component in this repo's own library (src/components/ui) or a feature module (src/components/<feature>/) — conventions, theme tokens, client/server boundary, the /components gallery entry, and keeping the docs-site component catalog in sync.
+description: Use when adding or extending a UI component in this repo's own library (src/components/ui) or a feature module (src/components/<feature>/) — conventions, theme tokens, client/server boundary, the /components gallery entry, and the docs-site gallery screenshots.
 ---
 
 # Add or extend a component
@@ -46,8 +46,7 @@ Then run the app, sign in, and look at `/components` at desktop and phone width.
 
 ## 5. Keep the docs site in sync
 
-The docs site has a catalog of this library (the template's space in the docs
-repo: `src/lib/records/template/component-catalog.ts`, plus screenshots in
-`public/template/components/`). Add an entry for the new component — import
-path, exports, notable props, a usage snippet checked against the real API —
-and recapture that section's screenshot if it changed visibly.
+The docs site's Component Library is a gallery: one screenshot per
+`/components` section, in `public/template/components/<section-id>.png` in the
+docs repo. If the change is visible, recapture that section's screenshot. A
+new gallery section also needs an entry in that doc's group list.

@@ -56,7 +56,7 @@ Subscriptions and one-time purchases through Stripe, with an embedded payment fo
 
 4. **Customer Portal.** *Settings → Billing → Customer portal*: turn on updating payment methods, invoice history and cancellation (and plan switching, if you want it). "Manage billing" on `/account` opens it.
 
-5. **Migration.** `npm run db:push` (or `npm run db:reset` locally) applies `*_billing.sql`. It's harmless with billing off.
+5. **Migration.** `npm run db:push` applies `*_billing.sql`. It's harmless with billing off.
 
 ### Local webhooks
 

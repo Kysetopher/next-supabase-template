@@ -34,14 +34,16 @@ storage files (add a `deleteUserFiles(service, "<bucket>", user.id)` call in
 `deleteAccount()`, `src/lib/actions/account.ts`), external customers, etc. The
 cleanup must block the deletion if it fails.
 
-## 4. Apply locally and regenerate types
+## 4. Apply to the development project and regenerate types
+
+With the **development** Supabase project linked (`npx supabase link --project-ref <dev-ref>`):
 
 ```bash
-npm run db:reset
+npm run db:push
 npm run db:types
 ```
 
-No Docker? Hand-edit `src/lib/supabase/types.ts` to match, in the same shape as the existing entries, and regenerate it later.
+`db:types` reads the linked project's schema into `src/lib/supabase/types.ts`.
 
 ## 5. Check
 
@@ -51,4 +53,4 @@ No Docker? Hand-edit `src/lib/supabase/types.ts` to match, in the same shape as 
 
 ## 6. Ship
 
-`npm run db:push` applies it to the linked hosted project. Dev first, production only after it's merged.
+Production only after it's merged: link the production project and run `npm run db:push` there.

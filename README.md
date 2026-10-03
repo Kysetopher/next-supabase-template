@@ -24,8 +24,6 @@ cp .env.example .env.local
 2. Apply the migrations: `npx supabase link --project-ref <ref>` then `npm run db:push`.
 3. Do the dashboard settings in [docs/AUTH.md](docs/AUTH.md#supabase-dashboard-settings-this-depends-on) — notably the **Reset Password** email template showing `{{ .Token }}` and the two redirect URLs.
 
-Or run everything locally (needs Docker): `npm run db:start` boots Postgres, Auth and an email inbox with `supabase/config.toml` already set up for these flows (confirmations on, code-based reset template, redirect URLs), and applies every migration.
-
 ### Database changes
 
 Schema changes are versioned SQL files in `supabase/migrations/` — never hand-edit a hosted database.
@@ -33,8 +31,7 @@ Schema changes are versioned SQL files in `supabase/migrations/` — never hand-
 | Script | Does |
 |---|---|
 | `npm run db:new <name>` | Creates a new empty migration file |
-| `npm run db:reset` | Rebuilds the local database from all migrations + `supabase/seed.sql` |
-| `npm run db:types` | Regenerates `src/lib/supabase/types.ts` from the local schema |
+| `npm run db:types` | Regenerates `src/lib/supabase/types.ts` from the linked project's schema |
 | `npm run db:push` | Applies pending migrations to the linked hosted project |
 
 ```bash
@@ -70,7 +67,7 @@ src/
   lib/supabase/            server/service clients, dal, db, types
   lib/rate-limit/          burst limiter, client IP
 supabase/migrations/       auth limits; profiles + avatars (the RLS pattern to copy)
-supabase/config.toml       local Supabase stack, preconfigured for the auth flows
+supabase/config.toml       Supabase CLI project config
 e2e/                       Playwright smoke tests
 docs/AUTH.md               how auth works and why
 ```

@@ -1,5 +1,5 @@
-// Regenerate after every migration:
-//   npx supabase gen types typescript --project-id <project-ref> > src/lib/supabase/types.ts
+// Regenerate after every migration with `npm run db:types` (reads the
+// linked Supabase project's schema).
 // This hand-written starting point matches supabase/migrations as shipped.
 
 export type Json =

@@ -72,10 +72,8 @@ docs/                      all documentation — start at DOCS.md
 | `npm run build` / `npm run start` | Production build / serve |
 | `npm run typecheck`, `npm run lint` | TypeScript, ESLint |
 | `npm run test:e2e` | Builds, then runs the Playwright smoke tests (no Supabase needed) |
-| `npm run db:start` / `db:stop` | Local Supabase stack (Docker) |
 | `npm run db:new <name>` | New empty migration |
-| `npm run db:reset` | Rebuild the local database from migrations + `supabase/seed.sql` |
-| `npm run db:types` | Regenerate `src/lib/supabase/types.ts` |
+| `npm run db:types` | Regenerate `src/lib/supabase/types.ts` from the linked project |
 | `npm run db:push` | Apply pending migrations to the linked hosted project |
 
 ## Environment
