@@ -108,3 +108,9 @@ Cloudflare Workers, through `@opennextjs/cloudflare`, built and deployed by Clou
 > Deploy this project to Cloudflare: read docs/CLOUDFLARE.md and follow the Deploy runbook step by step. Stop and wait for me at every USER STEP.
 
 How it all works — environments, variables, domain, Supabase and Stripe per environment: [CLOUDFLARE.md](CLOUDFLARE.md). The routes above behave the same on Workers.
+
+Before launch, set up real email: Supabase's built-in mailer only reaches your own team, 2 emails an hour, so signups fail once real users arrive. Paste into the agent:
+
+> Set up real email sending for this project: read docs/EMAIL.md and follow the runbook step by step. Stop and wait for me at every USER STEP.
+
+It sends auth emails from your domain through Resend ([EMAIL.md](EMAIL.md)), on each Supabase project.

@@ -6,6 +6,10 @@ it by pasting:
 
 > Set up this project for me: read docs/SETUP.md and follow it step by step. Stop and wait for me at every USER STEP.
 
+If setup stopped partway (the chat was closed, the app restarted, something failed), the user restarts it with:
+
+> Continue setting up this project: read docs/SETUP.md, work out from the project's current state which step we're on, tell me, and continue from there. Stop and wait for me at every USER STEP.
+
 ## Rules for the agent
 
 - **Go in order.** Finish and verify each step before the next. If a command fails, read the error, fix the cause, and run it again — don't skip ahead.
@@ -141,14 +145,17 @@ Check it worked: `/mcp` (Claude) or `codex mcp list` (Codex) shows the servers c
 
 ## 7. Supabase dashboard settings
 
-**USER STEP — change four settings** in the Supabase dashboard. Walk through them one at a time:
+Everything here works on Supabase's **free plan with its built-in email** — no email provider needed. The built-in email only reaches members of the user's Supabase team (their own account email) and sends a couple of emails an hour, so setup leaves email confirmation off until real email is connected ([EMAIL.md](EMAIL.md), optional, before launch).
 
-1. **Authentication → Sign In / Providers → Email:** turn on **Confirm email**, **Secure email change**, and **Secure password change**. Save.
-2. **Authentication → Email Templates → Reset Password:** replace the message body with the contents of `supabase/templates/recovery.html` (show the user the file's contents to copy). Subject: `Your password reset code`. Save. The reset page asks for a 6-digit code, so this email must show the code, not a link.
-3. **Authentication → URL Configuration:** set **Site URL** to `http://localhost:3000`, and add these two **Redirect URLs**: `http://localhost:3000/auth/callback` and `http://localhost:3000/auth/email-change`. Save.
-4. **Database → Extensions:** confirm `pg_cron` is enabled (the migration enables it; this just checks).
+**USER STEP — change three settings** in the Supabase dashboard. Walk through them one at a time:
 
-Tell them: when the app goes live, the deployed address needs its own Site URL and redirect URLs — the deploy runbook (step 13) walks through it.
+1. **Authentication → Sign In / Providers → Email:** turn **Confirm email off** (so anyone can sign up and use the app straight away — EMAIL.md turns it back on once real email works), and turn **Secure email change** and **Secure password change** on. Save.
+2. **Authentication → URL Configuration:** set **Site URL** to `http://localhost:3000`, and add these three **Redirect URLs**: `http://localhost:3000/auth/callback`, `http://localhost:3000/auth/email-change` and `http://localhost:3000/auth/recovery`. Save.
+3. **Database → Extensions:** confirm `pg_cron` is enabled (the migration enables it; this just checks).
+
+Leave the email templates alone. Supabase's default **Reset Password** email sends a link, which lands on `/auth/recovery` signed in and ready to set a new password. (If the project allows editing templates, pasting `supabase/templates/recovery.html` makes it send a 6-digit code instead, which also works across devices — optional.)
+
+Tell them: when the app goes live, the deployed address needs its own Site URL and redirect URLs, and real email should be connected first — the deploy runbook (step 13) walks through it.
 
 ## 8. Make it yours
 
@@ -190,14 +197,13 @@ npm run test:e2e
 
 Start the app in the background (`npm run dev`) and wait until it's ready.
 
-**USER STEP — sign up.** Tell the user to:
+**USER STEP — sign up and try a password reset.** Tell the user to:
 
-1. Open http://localhost:3000 and click **Create account**.
-2. Sign up with a real email address they can open.
-3. Click the confirmation link in the email — **in the same browser** — which lands them on the dashboard.
-4. Open **Components** in the sidebar to see the UI library.
+1. Open http://localhost:3000 and click **Create account**. Sign up with **the same email address as their Supabase account** (the built-in email only reaches their own team), and any password of 8+ characters. With email confirmation off, they land straight on the dashboard.
+2. Open **Components** in the sidebar to see the UI library.
+3. Log out (Account → Log out), then use **Forgot password?** on the login page with the same email. Open the link in the email **in the same browser**; it lands on the account page, where they set a new password.
 
-If any step fails, ask what they saw and fix it.
+If any step fails, ask what they saw and fix it (see **Common problems** below).
 
 ## 12. Save the work
 
@@ -208,6 +214,35 @@ Ask before committing. If they agree, commit with a message like `Set up project
 Optional, and not part of this run. Tell the user that when they want the app live, they paste this into the agent:
 
 > Deploy this project to Cloudflare: read docs/CLOUDFLARE.md and follow the Deploy runbook step by step. Stop and wait for me at every USER STEP.
+
+## Resuming
+
+When asked to continue, don't trust memory of an earlier chat — check the project, then start at the **first step whose check fails**. Read only what's listed; never print `.env.local`.
+
+| Step | Done when |
+|---|---|
+| 1 | `node -v` is 24 or newer |
+| 2 | `node_modules/` exists and `npm ls --depth=0` reports no missing packages |
+| 3 | the agent's skills folder has all the skills listed in step 3 |
+| 4 | `npm run check:env` prints `Environment OK.` |
+| 5 | `supabase/.temp/project-ref` exists (the project is linked) and `npm run db:types` succeeds with `profiles` in `src/lib/supabase/types.ts` |
+| 6 | `.mcp.json` / `.codex/config.toml` no longer contain `__SUPABASE_DEV_PROJECT_REF__`, and the user confirms the servers are approved and signed in |
+| 7 | **ask the user** — dashboard settings can't be checked from here; walk through step 7's list and have them confirm each |
+| 8 | `src/lib/site.ts` no longer has the default `name: "App"` |
+| 9 | ask whether they want payments now (skip if not) |
+| 10 | typecheck, lint and the smoke tests pass |
+| 11 | **ask the user** whether they've signed up and tried a password reset |
+| 12 | `git status` is clean, or the user has chosen not to commit yet |
+
+Tell the user which steps are already done (one line) and which step you're starting. If something from a done step is broken (e.g. `check:env` fails after it passed), go back to that step.
+
+### Common problems
+
+- **No reset email arrived:** Supabase's built-in email only reaches members of the Supabase team (use the Supabase account's email) and sends a couple an hour; check spam and wait. To email anyone else, connect real email ([EMAIL.md](EMAIL.md)). The app's own limit is 3 emails an hour per address.
+- **"Opened in a different browser":** emailed links (reset, email change, signup confirmation once it's on) only work in the browser that asked for them. Request a new one from that browser.
+- **The Supabase project is paused** (free projects pause after a period of inactivity): have the user open the dashboard and click **Restore**, wait for it to come back, then retry.
+- **`db:push` asks for a password and fails:** it's the **database password** from creating the project, not their Supabase account password. They can reset it in **Project Settings → Database**.
+- **The agent's tools stopped working after a restart:** they may need approving or signing in again — see [MCP.md](MCP.md).
 
 ## Done
 

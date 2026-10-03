@@ -32,6 +32,7 @@ const PUBLIC_ROUTES = [
   "/signup/check-email",
   "/auth/callback",
   "/auth/email-change",
+  "/auth/recovery",
   "/forgot-password",
   "/reset-password",
 ];

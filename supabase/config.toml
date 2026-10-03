@@ -171,6 +171,7 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = [
   "http://localhost:3000/auth/callback",
   "http://localhost:3000/auth/email-change",
+  "http://localhost:3000/auth/recovery",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -244,15 +245,19 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# Custom SMTP through Resend (docs/EMAIL.md). Reference only: this project has no local stack, so
+# this block is never applied. Set the same values in each hosted project's dashboard
+# (Authentication > Emails > SMTP Settings); the API key is typed there by the user and lives
+# nowhere else, never in .env.local or the repo. Once custom SMTP is on, the hourly email limit
+# (auth.rate_limit.email_sent above) is set under Authentication > Rate Limits.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "no-reply@auth.example.com"
+# sender_name = "App"
 
 # The reset flow types a 6-digit code (src/lib/actions/auth.ts resetPassword()), so this template
 # must show {{ .Token }}, not a link. Mirror it in the hosted project's dashboard

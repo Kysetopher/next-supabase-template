@@ -17,6 +17,7 @@ const ERRORS = {
   signup_disabled: "Sign-ups are currently closed.",
   login_failed: "Could not sign you in. Please try again.",
   invalid_link: "That link is invalid or has expired.",
+  reset_link_other_browser: "That reset link has to be opened in the browser you requested it from. Open it there, or request a new one below.",
   link_other_browser: "That link was opened in a different browser than the one you signed up in, so we couldn't sign you in here. Your email may already be confirmed — log in with your password.",
   code_required: "Enter the 6-digit code from the email.",
   invalid_code: "That code is wrong or has expired. Check the email, or send a new code.",
@@ -49,6 +50,7 @@ const NOTICES = {
   email_change_sent: "We sent a confirmation link to your new address. The change happens once you click it. If one also arrives at your current address, click that too.",
   email_change_confirm_other: "Link accepted. Now click the link sent to your other address to finish the change.",
   email_changed: "Your email is updated.",
+  set_new_password: "You're signed in from your reset email. Set a new password below — your current one isn't needed.",
 } as const;
 
 export type ErrorCode = keyof typeof ERRORS;

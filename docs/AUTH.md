@@ -37,6 +37,11 @@ Server-only Supabase Auth on Next.js 16 (`@supabase/ssr`). There is no browser S
 3. **Authentication → URL Configuration**: Site URL = `SITE_URL`; Redirect URLs include `SITE_URL/auth/callback` and `SITE_URL/auth/email-change` (otherwise Supabase sends links to the Site URL and the flows never complete). Each deployed domain needs its own two Redirect URLs, in the Supabase project that environment uses ([CLOUDFLARE.md](CLOUDFLARE.md)).
 4. **Database → Extensions**: `pg_cron` (the migration enables it; it prunes old limit rows nightly).
 5. Run `supabase/migrations/*_auth_limits.sql` (`npx supabase db push`, or paste it into the SQL editor).
+6. **Authentication → Emails → SMTP Settings**: custom SMTP (Resend) for real users, then **Authentication → Rate Limits** for the hourly email limit. See **Production email** below.
+
+## Production email
+
+Supabase's built-in mailer sends 2 emails an hour, only to the project's team members, and new free-plan projects can't edit their templates on it (so the reset email can't show the code). Before real users sign up, each Supabase project needs custom SMTP from a domain you own: the agent runbook in [EMAIL.md](EMAIL.md) sets up Resend, the Cloudflare DNS records, the rate limit and the templates. The SMTP key is entered in the Supabase dashboard only; the app has no email env vars and sends nothing itself.
 
 ## Rate limiting is layered
 

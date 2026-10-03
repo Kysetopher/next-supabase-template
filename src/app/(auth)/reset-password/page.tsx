@@ -11,7 +11,9 @@ export const metadata = {
 };
 
 /**
- * Step 2 of a password reset: the code from the email plus the new password
+ * Step 2 of a password reset. Supabase's default email carries a link, which
+ * lands on /auth/recovery instead; with the Reset Password template edited to
+ * show `{{ .Token }}`, it carries a code, entered here with the new password
  * (resetPassword()). Shown the same way whether or not the email has an
  * account, so it can't reveal who's registered. Without a valid `?email=`
  * there's nothing to verify against, so it sends the user back a step.
@@ -45,8 +47,9 @@ export default async function ResetPasswordPage({
       <div className="flex flex-col gap-1">
         <h1 className="text-lg font-semibold">Set a new password</h1>
         <p className="text-sm text-muted-foreground">
-          If <span className="text-foreground">{email}</span> has an account, we sent it a 6-digit code. It works
-          whichever device you read the email on.
+          If <span className="text-foreground">{email}</span> has an account, we sent it an email. If it has a{" "}
+          <strong className="text-foreground">link</strong>, open it in this browser and you can set a new password straight away. If
+          it has a <strong className="text-foreground">6-digit code</strong>, enter it below — that works on any device.
         </p>
       </div>
 

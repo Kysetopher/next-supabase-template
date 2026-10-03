@@ -140,7 +140,13 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  // redirectTo makes Supabase's default Reset Password email (a link) work
+  // too: the link lands on /auth/recovery, signed in, ready to set a new
+  // password. With the template edited to show {{ .Token }}, the same email
+  // carries the 6-digit code typed on /reset-password instead.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${env.SITE_URL}/auth/recovery`,
+  });
 
   // An unknown email gets no error here, so the cooldown answers the same.
   if (error && !isResendCooldown(error)) {
