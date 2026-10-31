@@ -50,11 +50,12 @@ export function readProgress() {
   }
 }
 
-export function setMarked(step, done) {
+/** Records a step number or an integration key (see INTEGRATIONS) as confirmed, or clears it. */
+export function setMarked(key, done) {
   const progress = readProgress();
   progress.marked ??= {};
-  if (done) progress.marked[step] = new Date().toISOString();
-  else delete progress.marked[step];
+  if (done) progress.marked[key] = new Date().toISOString();
+  else delete progress.marked[key];
   mkdirSync(join(ROOT, ".setup"), { recursive: true });
   writeFileSync(PROGRESS_FILE, `${JSON.stringify(progress, null, 2)}\n`);
 }
@@ -124,6 +125,17 @@ function checkGitClean() {
   return result;
 }
 
+// `gh auth status` exits 0 when the GitHub CLI is installed and signed in. It
+// never prints the token unless asked to (--show-token), and we only read the
+// exit code.
+let ghCache = { at: 0, ok: false };
+function githubCliSignedIn() {
+  if (Date.now() - ghCache.at < 30_000) return ghCache.ok;
+  const run = spawnSync("gh", ["auth", "status", "--hostname", "github.com"], { stdio: "ignore", timeout: 10_000 });
+  ghCache = { at: Date.now(), ok: run.status === 0 };
+  return ghCache.ok;
+}
+
 function missingPackages() {
   const pkg = JSON.parse(read("package.json") ?? "{}");
   const names = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
@@ -155,12 +167,10 @@ const item = (label, ok, detail = "") => ({ label, ok: Boolean(ok), detail });
 const tool = (key, label, ok, detail = "") => ({ key, ...item(label, ok, detail) });
 
 /** Per-step checks, keyed by the step number in docs/SETUP.md. */
-function stepChecks() {
+function stepChecks(marked) {
   const nodeMajor = Number(process.versions.node.split(".")[0]);
   const deps = missingPackages();
   const types = read("src", "lib", "supabase", "types.ts") ?? "";
-  const mcp = read(".mcp.json");
-  const codex = read(".codex", "config.toml");
   const lastRun = (() => {
     try {
       return JSON.parse(read("test-results", ".last-run.json") ?? "null");
@@ -201,10 +211,10 @@ function stepChecks() {
       ],
     },
     6: {
-      manual: "Servers approved and signed in",
       items: [
-        item("Dev project ref set in .mcp.json", mcp !== null && !mcp.includes(MCP_PLACEHOLDER)),
-        item("Dev project ref set in .codex/config.toml", codex !== null && !codex.includes(MCP_PLACEHOLDER)),
+        item("Supabase tools connected (agent checked with a read-only call)", marked["supabase-mcp"]),
+        item("Cloudflare tools connected, or left until deploying", marked["cloudflare-mcp"]),
+        item("Browser available to the agent", marked.browser),
       ],
     },
     7: { manual: "Dashboard settings changed", items: [] },
@@ -236,17 +246,45 @@ function installed() {
     tool("skills", "Agent skills", skillsIn(".claude/skills").length === SKILLS.length && skillsIn(".agents/skills").length === SKILLS.length),
     tool("env", ".env.local", existsSync(at(".env.local"))),
     tool("linked", "Supabase linked", existsSync(at("supabase", ".temp", "project-ref"))),
-    tool("mcp", "MCP tools configured", !(read(".mcp.json") ?? MCP_PLACEHOLDER).includes(MCP_PLACEHOLDER)),
-    tool("stripe", "Stripe billing", /^STRIPE_SECRET_KEY=\S/m.test(read(".env.local") ?? ""), "optional"),
   ];
+}
+
+/**
+ * Every integration setup and the deploy runbook can connect. Most live in the
+ * agent app or a dashboard, where nothing on disk shows them, so the agent
+ * confirms them (`npm run setup:mark -- <key>`) after checking they work; the
+ * rest are read from the project. Keys must match INTEGRATIONS on the docs site.
+ */
+export const INTEGRATIONS = [
+  { key: "supabase-mcp", label: "Supabase tools (MCP)", how: "after a read-only call (list tables) works" },
+  { key: "cloudflare-mcp", label: "Cloudflare tools (MCP)", how: "after a docs search works and the user has signed in, or chose to wait until deploying" },
+  { key: "github", label: "GitHub", how: "once Codex's GitHub plugin works (the GitHub CLI is detected without marking)", optional: true },
+  { key: "browser", label: "Browser", how: "after opening a page in it" },
+  { key: "stripe", label: "Stripe payments", optional: true },
+  { key: "email", label: "Email from your domain (Resend)", how: "after docs/EMAIL.md's test email arrives", optional: true },
+  { key: "deploy", label: "Deployed to Cloudflare", how: "after docs/CLOUDFLARE.md's runbook finishes", optional: true },
+];
+
+function integrations(marked) {
+  const mcp = read(".mcp.json") ?? "";
+  const auto = {
+    // Claude reads the dev project ref from .mcp.json; Codex uses its Supabase plugin.
+    "supabase-mcp": { detail: mcp.includes(MCP_PLACEHOLDER) ? "Claude: dev project ref not yet in .mcp.json" : "" },
+    github: { ok: githubCliSignedIn(), detail: "GitHub CLI not installed or not signed in" },
+    stripe: { ok: /^STRIPE_SECRET_KEY=\S/m.test(read(".env.local") ?? ""), detail: "no Stripe keys in .env.local yet" },
+  };
+  return INTEGRATIONS.map(({ key, label, optional }) => {
+    const ok = Boolean(marked[key]) || Boolean(auto[key]?.ok);
+    return { key, label, ok, optional: Boolean(optional), detail: ok ? "" : (auto[key]?.detail ?? "") };
+  });
 }
 
 // ---------------------------------------------------------------- status
 
 export function getStatus() {
   const { start, resume, steps, sections } = parseSetup();
-  const checks = stepChecks();
   const { marked = {} } = readProgress();
+  const checks = stepChecks(marked);
 
   const list = steps.map((step) => {
     const check = checks[step.n];
@@ -273,6 +311,7 @@ export function getStatus() {
     sections,
     steps: list,
     installed: installed(),
+    integrations: integrations(marked),
     total: tracked.length,
     done: tracked.filter((s) => s.done).length,
     current: current?.n ?? null,

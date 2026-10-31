@@ -69,8 +69,7 @@ open-next.config.ts        OpenNext build config (defaults)
 cloudflare-bindings.d.ts   types for the bindings in wrangler.jsonc
 docs/                      all documentation — start at DOCS.md
 .claude/skills/            agent skills for Claude Code — SKILLS.md
-.mcp.json                  Claude Code MCP servers: Supabase (dev, read-only), Cloudflare, GitHub — MCP.md
-.codex/config.toml         the same MCP servers for Codex (trusted projects) — MCP.md
+.mcp.json                  Claude Code MCP servers: Supabase (dev, read-only), Cloudflare — MCP.md (Codex uses plugins)
 .agents/skills/            the same skills for Codex and other agents (npm run skills:sync)
 skills-lock.json           pinned versions of installed skill sets (Supabase, Cloudflare)
 .github/workflows/ci.yml   typecheck, lint, build, smoke tests, Cloudflare Workers build

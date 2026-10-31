@@ -14,14 +14,14 @@ If setup stopped partway (the chat was closed, the app restarted, something fail
 
 The template's **Getting Started** page on the docs site (https://docs-dusky-theta.vercel.app/spaces/next-supabase-template/getting-started) is the live view of this setup. Opened with the user's progress in its link, its **Steps** section ticks off what's done, highlights the step they're on, lists these steps with the current one marked, shows what's installed and a short note of what you're doing.
 
-The progress comes from the project's state (the checks in the **Resuming** table below), worked out by `scripts/setup-guide/` and put after the `#` in the link, which browsers never send to the server. Steps only the user can confirm are recorded with `npm run setup:mark -- <step>` in `.setup/progress.json` on this machine. The checks are keyed by the step numbers here, and the docs site lists these step titles, so renumbering or renaming steps means updating `checks.mjs` and `SetupProgress.tsx` in the docs repo too.
+The progress comes from the project's state (the checks in the **Resuming** table below), worked out by `scripts/setup-guide/` and put after the `#` in the link, which browsers never send to the server. Steps only the user can confirm, and integrations that live in the agent app or a dashboard (agent tools, browser, email, deploy), are recorded with `npm run setup:mark -- <step or integration>` in `.setup/progress.json` on this machine; the GitHub CLI and Stripe keys are detected by themselves. The checks are keyed by the step numbers here, and the docs site lists these step titles, so renumbering or renaming steps means updating `checks.mjs` and `SetupProgress.tsx` in the docs repo too (the same goes for integration keys).
 
 - **Claude desktop app (Code tab):** a SessionStart hook (`.claude/settings.json`) reminds the agent at the start of every session while setup is unfinished, with the link; the agent opens it in the browser pane beside the chat (`preview_start` with that `url`).
 - **Anywhere else:** `npm run setup:status` prints progress and the link; the user opens it in their browser.
 
 ## Rules for the agent
 
-- **Keep the guide open and in step.** At the start of setup (or a resumed setup), open the live guide (above) if it isn't already, and tell the user which step they're on and how far along they are. When you start a step and when you finish one, run `npm run -s setup:url -- "<what you're doing, a few words>"` and open the link it prints in the same tab (only the part after `#` changes, so the page updates in place). After the user confirms a step that can't be checked from here (6, 7, 9, 10, 11, or choosing not to commit in 12), run `npm run setup:mark -- <step>` first. `npm run setup:status` shows what's left.
+- **Keep the guide open and in step.** At the start of setup (or a resumed setup), open the live guide (above) if it isn't already, and tell the user which step they're on and how far along they are. When you start a step and when you finish one, run `npm run -s setup:url -- "<what you're doing, a few words>"` and open the link it prints in the same tab (only the part after `#` changes, so the page updates in place). After the user confirms a step that can't be checked from here (7, 9, 10, 11, or choosing not to commit in 12), run `npm run setup:mark -- <step>` first; integrations (agent tools, GitHub, browser) are marked by name once you've checked they work (step 6). `npm run setup:status` shows what's left.
 - **Go in order.** Finish and verify each step before the next. If a command fails, read the error, fix the cause, and run it again — don't skip ahead.
 - **Stop at every USER STEP.** Tell the user exactly what to do, in plain language with the exact clicks or command, then wait for them to say they're done.
 - **Never ask for secrets in chat.** Keys and passwords go straight into `.env.local` (typed by the user in a text editor) or into a terminal prompt. Never print, read aloud, or commit `.env.local`. To check it, run `npm run check:env`, which reports problems without showing values.
@@ -129,30 +129,36 @@ It must succeed, and `src/lib/supabase/types.ts` must contain `profiles`, `auth_
 
 ## 6. Connect the agent's tools (MCP)
 
-MCP servers give you tools beyond the shell: the development database (read-only), Cloudflare's docs, logs and builds, GitHub, and a browser. What each does and why it's scoped that way: docs/MCP.md. Tell the user in two lines what this step adds and that every sign-in is theirs.
+MCP servers give you tools beyond the shell: the development database, Cloudflare's docs, logs and builds, GitHub, and a browser. What each does: docs/MCP.md. Tell the user in two lines what this step adds and that every sign-in is theirs. As each one works, record it for the live guide: `npm run setup:mark -- <supabase-mcp | cloudflare-mcp | github | browser>`.
 
-**Which agent are you?** Use what you know about yourself; if unsure, ask the user which app they're using. The config files are `.mcp.json` (Claude Code: the CLI and the desktop app's Code tab) and `.codex/config.toml` (Codex: CLI, IDE extension, ChatGPT desktop app).
+**Which agent are you?** Use what you know about yourself; if unsure, ask the user which app they're using. Claude (the CLI and the desktop app's Code tab) uses this project's `.mcp.json`; Codex (the ChatGPT desktop app, CLI and IDE extension) uses plugins the user turns on in the app.
 
-**Fill in the development project ref** (from step 5) in **both** files, so either agent works on this project later: replace `__SUPABASE_DEV_PROJECT_REF__` in the `supabase` URL. Change nothing else in the URL — it must keep `read_only=true`. Never use a production ref. Confirm `.mcp.json` still parses (`node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8'))"`), the placeholder is gone from both files, and `git diff -- .mcp.json .codex/config.toml` shows exactly one changed line in each.
+**Claude Code / Claude desktop Code tab:**
 
-**USER STEP — approve and sign in.** MCP servers load when a session starts, so first have the user restart and come back to this same conversation, then continue from here: Claude Code CLI — quit and run `claude --continue` in the project folder; Codex CLI — quit and run `codex resume --last`; a desktop app — quit it fully, reopen it and open this conversation from the sidebar. Then walk them through the steps for their agent, one at a time:
+1. **Fill in the development project ref** (from step 5) in `.mcp.json`: replace `__SUPABASE_DEV_PROJECT_REF__` in the `supabase` URL. Change nothing else in the URL — it must keep `read_only=true`. Never use a production ref. Confirm it still parses (`node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8'))"`) and `git diff -- .mcp.json` shows exactly one changed line.
+2. **USER STEP — restart, approve and sign in.** MCP servers load when a session starts: have the user quit fully and come back to this conversation (CLI: `claude --continue` in the project folder; desktop app: reopen it and open this conversation from the sidebar). Then, one at a time:
+   1. When asked whether to use this project's MCP servers, approve `supabase`, `cloudflare-docs`, `cloudflare-observability` and `cloudflare-builds`.
+   2. Run `/mcp`, select `supabase` and finish the sign-in in the browser (or `claude mcp login supabase` in a terminal). Then the same for `cloudflare-observability` and `cloudflare-builds` (a Cloudflare account is free; if they don't have one yet, they can do this after deploying).
+   3. If `/mcp` also lists Supabase or Cloudflare connectors from their claude.ai account, have them turn those off for this project — they aren't limited to the development project.
 
-- **Claude Code / Claude desktop Code tab:**
-  1. When asked whether to use this project's MCP servers, approve `supabase`, `cloudflare-docs`, `cloudflare-observability` and `cloudflare-builds`. (`github` comes below.)
-  2. Run `/mcp`, select `supabase` and finish the sign-in in the browser (or run `claude mcp login supabase` in a terminal). Then the same for `cloudflare-observability` and `cloudflare-builds` (a Cloudflare account is free; if they don't have one yet, they can do this after deploying).
-  3. If `/mcp` also lists a Supabase connector from their claude.ai account, have them turn it off for this project — it isn't limited to the development project.
-- **Codex (CLI, IDE extension or ChatGPT desktop app):**
-  1. Trust the project when Codex asks (it only reads `.codex/config.toml` in trusted projects; if they declined earlier, see Troubleshooting in docs/MCP.md).
-  2. In a terminal in the project folder, run one at a time and finish each sign-in in the browser: `codex mcp login supabase`, `codex mcp login cloudflare-observability`, `codex mcp login cloudflare-builds`.
+**Codex (ChatGPT desktop app, CLI or IDE extension):**
 
-Check it worked: `/mcp` (Claude) or `codex mcp list` (Codex) shows the servers connected. Then make one read-only call — list the tables on the Supabase server — and confirm `profiles` is there. If a server fails, see Troubleshooting in docs/MCP.md.
+1. **USER STEP — turn on the plugins.** In the app, open **Plugins** (CLI: type `/plugins`), search for and install **Supabase** and **Cloudflare**. Each signs in through the browser the first time you use it: for Supabase, choose the organization that holds the development project.
+2. Plugins are not limited to one project and can make changes, so the project's rules do the limiting: use only the **development** project (its ref is the subdomain of `SUPABASE_URL`), and ask before every write (MCP.md "Rules for agents").
 
-**GitHub (optional; default no).** Ask whether they want the agent to read issues, pull requests and CI runs on GitHub. It needs a personal access token: if yes, follow "Why GitHub uses a token" in docs/MCP.md — the token is created and saved by the user as the environment variable `GITHUB_PERSONAL_ACCESS_TOKEN`, never pasted in the chat. Then for Claude they approve `github` (`/mcp`; if they declined it at the first prompt, run `claude mcp reset-project-choices` and restart), and for Codex you set `enabled = true` under `[mcp_servers.github]` in `.codex/config.toml` and they restart Codex.
+**Check it worked**, either agent: list the tables of the development project with the Supabase tools and confirm `profiles` is there (read-only), then `npm run setup:mark -- supabase-mcp`. Search Cloudflare's docs for anything, and once the user has signed in to Cloudflare (or chosen to wait until deploying), `npm run setup:mark -- cloudflare-mcp`. If a server fails, see Troubleshooting in docs/MCP.md.
 
-**Browser.** In the Claude desktop Code tab and the ChatGPT desktop app, use the built-in browser for this app; nothing to install. Otherwise ask whether they want browser tools (default no — they can add them later):
+**GitHub (optional; default no).** Ask whether they want the agent to read issues, pull requests and CI runs on GitHub (the agent already has `git`, and they push with GitHub Desktop). If yes:
+
+- **Codex:** **USER STEP** — install the **GitHub** plugin from **Plugins** and sign in. Then `npm run setup:mark -- github`.
+- **Claude:** use the GitHub CLI, which signs in through the browser — no token to create or store. **USER STEP:** install it (Windows: `winget install --id GitHub.cli` in PowerShell; macOS: `brew install gh`, or the installer from https://cli.github.com if they don't have Homebrew), restart the agent app so it finds `gh`, then run `gh auth login --web` in a terminal and follow the browser prompts. Check with `gh auth status`; the live guide picks it up by itself.
+
+**Browser.** In the Claude desktop Code tab and the ChatGPT desktop app, use the built-in browser; nothing to install. Otherwise ask whether they want browser tools (default no — they can add them later):
 
 - **Claude Code CLI:** **USER STEP** — install the Claude in Chrome extension (https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn, needs a paid Claude plan), then run `/chrome` and choose **Enabled by default**.
 - **Codex CLI:** ask before changing their personal Codex config, then add Chrome DevTools MCP with the command for their OS from the Chrome section of docs/MCP.md.
+
+Once you've opened a page in the browser (the live guide counts), `npm run setup:mark -- browser`.
 
 ## 7. Supabase dashboard settings
 
@@ -239,7 +245,7 @@ When asked to continue, don't trust memory of an earlier chat — check the proj
 | 3 | the agent's skills folder has all the skills listed in step 3 |
 | 4 | `npm run check:env` prints `Environment OK.` |
 | 5 | `supabase/.temp/project-ref` exists (the project is linked) and `npm run db:types` succeeds with `profiles` in `src/lib/supabase/types.ts` |
-| 6 | `.mcp.json` / `.codex/config.toml` no longer contain `__SUPABASE_DEV_PROJECT_REF__`, and the user confirms the servers are approved and signed in |
+| 6 | `npm run setup:status` shows the Supabase and Cloudflare tools and the browser marked (Claude: `.mcp.json` no longer contains `__SUPABASE_DEV_PROJECT_REF__`); if not, check each works and mark it |
 | 7 | **ask the user** — dashboard settings can't be checked from here; walk through step 7's list and have them confirm each |
 | 8 | `src/lib/site.ts` no longer has the default `name: "App"` |
 | 9 | ask whether they want payments now (skip if not) |

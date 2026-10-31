@@ -271,6 +271,7 @@ Follow [STRIPE.md](STRIPE.md) **Setup** in **live mode** for production: product
 - Fetch the production URL's home page and confirm it returns 200 with the `Strict-Transport-Security` and `X-Frame-Options` headers (`curl -sI https://<domain>`), and that `/dashboard` redirects to `/login`.
 - **USER STEP — sign up on the live site** with a real email, click the confirmation link in the same browser, and land on the dashboard. If something fails, ask what they saw. With the user logged in to Wrangler (`npx wrangler login`, a USER STEP), `npx wrangler tail` shows the Worker's logs live while they retry; otherwise have them open the Worker's **Observability** tab.
 - Do the same on the dev site if there is one.
+- Run `npm run setup:mark -- deploy` so the live setup guide shows the app as deployed. If the user signed in to Cloudflare's tools only now, also check them and `npm run setup:mark -- cloudflare-mcp`.
 
 ### Done
 

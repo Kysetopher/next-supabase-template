@@ -74,6 +74,6 @@ supabase/migrations/       auth limits; profiles + avatars (the RLS pattern to c
 supabase/config.toml       Supabase CLI project config
 e2e/                       Playwright smoke tests
 wrangler.jsonc             Cloudflare Workers config (docs/CLOUDFLARE.md)
-.mcp.json, .codex/         the agent's MCP tool connections (docs/MCP.md)
+.mcp.json                 Claude's MCP tool connections; Codex uses plugins (docs/MCP.md)
 docs/AUTH.md               how auth works and why
 ```

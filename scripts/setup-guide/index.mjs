@@ -8,10 +8,11 @@
 //
 //   node scripts/setup-guide/index.mjs status        print progress (npm run setup:status)
 //   node scripts/setup-guide/index.mjs url [doing]   print the guide URL (npm run -s setup:url -- "Installing packages")
-//   node scripts/setup-guide/index.mjs mark 7        mark a user-confirmed step done (npm run setup:mark -- 7)
+//   node scripts/setup-guide/index.mjs mark 7        mark a user-confirmed step or integration done
+//                                                    (npm run setup:mark -- 7, npm run setup:mark -- supabase-mcp)
 //   node scripts/setup-guide/index.mjs unmark 7      undo that
 //   node scripts/setup-guide/index.mjs hook          Claude Code SessionStart hook (.claude/settings.json)
-import { getStatus, setMarked } from "./checks.mjs";
+import { INTEGRATIONS, getStatus, setMarked } from "./checks.mjs";
 
 export const GUIDE_PAGE = "https://docs-dusky-theta.vercel.app/spaces/next-supabase-template/getting-started";
 const [command = "status", ...args] = process.argv.slice(2);
@@ -26,7 +27,7 @@ export function setupGuideUrl(status, doing = "") {
     of: String(status.total),
     done: status.steps.filter((s) => s.tracked && s.done).map((s) => s.n).join(","),
     now: status.current ? String(status.current) : "",
-    have: status.installed.filter((i) => i.ok).map((i) => i.key).join(","),
+    have: [...status.installed, ...status.integrations].filter((i) => i.ok).map((i) => i.key).join(","),
   });
   if (doing.trim()) params.set("doing", doing.trim().slice(0, 120));
   return `${GUIDE_PAGE}#${params.toString().replace(/%2C/g, ",")}`;
@@ -50,19 +51,27 @@ function printStatus() {
       if (step.manual && !step.marked) console.log(`       - to confirm with the user, then \`npm run setup:mark -- ${step.n}\`: ${step.manual}`);
     }
   }
+  console.log("Integrations:");
+  for (const i of status.integrations) {
+    const how = INTEGRATIONS.find((d) => d.key === i.key).how;
+    const todo = i.ok ? "" : `  (${[i.detail, how && `mark with \`npm run setup:mark -- ${i.key}\` ${how}`].filter(Boolean).join("; ")})`;
+    console.log(` ${i.ok ? "[x]" : "[ ]"} ${i.label}${i.optional ? " — optional" : ""}${todo}`);
+  }
   console.log(`Live guide: ${setupGuideUrl(status)}`);
 }
 
 function mark(done) {
-  const n = Number(args[0]);
-  const step = getStatus().steps.find((s) => s.n === n && s.tracked);
-  if (!step) {
-    console.error(`No setup step ${args[0] ?? ""}. Usage: npm run setup:${done ? "" : "un"}mark -- <step number>`);
+  const key = args[0] ?? "";
+  const isStep = getStatus().steps.some((s) => String(s.n) === key && s.tracked && s.manual);
+  const isIntegration = INTEGRATIONS.some((i) => i.key === key);
+  if (!isStep && !isIntegration) {
+    const keys = INTEGRATIONS.map((i) => i.key).join(", ");
+    console.error(`Nothing to mark called "${key}". Usage: npm run setup:${done ? "" : "un"}mark -- <step number or integration: ${keys}>`);
     process.exit(1);
   }
-  setMarked(n, done);
+  setMarked(key, done);
   const status = getStatus();
-  console.log(`${done ? "Marked" : "Unmarked"} step ${n}. ${summary(status)}`);
+  console.log(`${done ? "Marked" : "Unmarked"} ${isStep ? "step " : ""}${key}. ${summary(status)}`);
   console.log(`Live guide: ${setupGuideUrl(status)}`);
 }
 
@@ -82,7 +91,7 @@ function hook() {
     `1. Open the live setup guide for the user: ${setupGuideUrl(status)}`,
     "   In the Claude desktop app, open it in the browser pane beside the chat (preview_start with that `url`). Elsewhere, give the user the link to open in their browser.",
     "2. Tell the user in one or two lines which step they're on and how far along they are, and offer to continue (following docs/SETUP.md). Don't start setup work until they say so.",
-    'While doing setup, keep the guide in step: when you start a step, and after finishing one, run `npm run -s setup:url -- "<what you are doing, a few words>"` and navigate the browser pane to the URL it prints (only the part after # changes, so the page updates in place). After the user confirms a step that can\'t be checked from here, first run `npm run setup:mark -- <step>`. `npm run setup:status` prints progress as text.',
+    'While doing setup, keep the guide in step: when you start a step, and after finishing one, run `npm run -s setup:url -- "<what you are doing, a few words>"` and navigate the browser pane to the URL it prints (only the part after # changes, so the page updates in place). After the user confirms a step that can\'t be checked from here, or you\'ve checked an integration works, first run `npm run setup:mark -- <step or integration>`. `npm run setup:status` prints progress as text.',
   ].join("\n");
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: context } }));
 }

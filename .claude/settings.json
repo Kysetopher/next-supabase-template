@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/setup-guide/index.mjs\" hook",
+            "command": "node scripts/setup-guide/index.mjs hook",
             "timeout": 30
           }
         ]
