@@ -18,6 +18,8 @@ Open the project in an AI coding agent (Claude Code, Codex, …) and paste:
 
 The agent installs everything, checks your `.env.local`, connects your hosted Supabase project and the agent's tools (MCP), rebrands the app and verifies it, stopping for the steps only you can do (typing in your keys, signing in to Supabase and the agent's tools, dashboard settings). Keys never go in the chat. Details: [docs/SETUP.md](docs/SETUP.md).
 
+While setup is unfinished, the agent opens the template's [Getting Started guide](https://docs-dusky-theta.vercel.app/spaces/next-supabase-template/getting-started) beside the chat (in the Claude desktop app's browser pane) and keeps it in step as it works: which step you're on, how far along you are and what's installed. Anywhere else, `npm run setup:status` prints the same with a link to open.
+
 ### Database changes
 
 Schema changes are versioned SQL files in `supabase/migrations/` — never hand-edit a hosted database.

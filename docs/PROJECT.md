@@ -61,6 +61,8 @@ supabase/
   templates/               auth email templates
   config.toml              Supabase CLI config (no local database); records the auth settings
 scripts/check-env.mjs      npm run check:env — validates .env.local without printing it
+scripts/setup-guide/       setup progress for the live guide on the docs site (SETUP.md "The live guide")
+.claude/settings.json      SessionStart hook: opens the setup guide while setup is unfinished
 e2e/                       Playwright smoke tests
 wrangler.jsonc             Cloudflare Workers config: name, vars, rate limits, env.dev — CLOUDFLARE.md
 open-next.config.ts        OpenNext build config (defaults)
@@ -83,6 +85,8 @@ skills-lock.json           pinned versions of installed skill sets (Supabase, Cl
 | `npm run typecheck`, `npm run lint` | TypeScript, ESLint |
 | `npm run skills:sync` | Mirrors the project's own skills from `.claude/skills` to `.agents/skills` |
 | `npm run check:env` | Validates `.env.local` the way the server does at startup, without printing values |
+| `npm run setup:status` | Prints setup progress as text, with the live guide's link; `npm run setup:mark -- <step>` / `setup:unmark` record steps only the user can confirm |
+| `npm run -s setup:url -- "<doing>"` | Prints the live guide's link for the current progress, with an optional note of what the agent is doing |
 | `npm run test:e2e` | Builds, then runs the Playwright smoke tests (no Supabase needed) |
 | `npm run db:new <name>` | New empty migration |
 | `npm run db:types` | Regenerate `src/lib/supabase/types.ts` from the linked project |

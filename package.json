@@ -13,7 +13,11 @@
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/types.ts",
     "test:e2e": "playwright test",
     "check:env": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env.local scripts/check-env.mjs",
-    "skills:sync": "node scripts/sync-skills.mjs"
+    "skills:sync": "node scripts/sync-skills.mjs",
+    "setup:status": "node scripts/setup-guide/index.mjs status",
+    "setup:url": "node scripts/setup-guide/index.mjs url",
+    "setup:mark": "node scripts/setup-guide/index.mjs mark",
+    "setup:unmark": "node scripts/setup-guide/index.mjs unmark"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",

@@ -10,8 +10,18 @@ If setup stopped partway (the chat was closed, the app restarted, something fail
 
 > Continue setting up this project: read docs/SETUP.md, work out from the project's current state which step we're on, tell me, and continue from there. Stop and wait for me at every USER STEP.
 
+## The live guide
+
+The template's **Getting Started** page on the docs site (https://docs-dusky-theta.vercel.app/spaces/next-supabase-template/getting-started) is the live view of this setup. Opened with the user's progress in its link, its **Steps** section ticks off what's done, highlights the step they're on, lists these steps with the current one marked, shows what's installed and a short note of what you're doing.
+
+The progress comes from the project's state (the checks in the **Resuming** table below), worked out by `scripts/setup-guide/` and put after the `#` in the link, which browsers never send to the server. Steps only the user can confirm are recorded with `npm run setup:mark -- <step>` in `.setup/progress.json` on this machine. The checks are keyed by the step numbers here, and the docs site lists these step titles, so renumbering or renaming steps means updating `checks.mjs` and `SetupProgress.tsx` in the docs repo too.
+
+- **Claude desktop app (Code tab):** a SessionStart hook (`.claude/settings.json`) reminds the agent at the start of every session while setup is unfinished, with the link; the agent opens it in the browser pane beside the chat (`preview_start` with that `url`).
+- **Anywhere else:** `npm run setup:status` prints progress and the link; the user opens it in their browser.
+
 ## Rules for the agent
 
+- **Keep the guide open and in step.** At the start of setup (or a resumed setup), open the live guide (above) if it isn't already, and tell the user which step they're on and how far along they are. When you start a step and when you finish one, run `npm run -s setup:url -- "<what you're doing, a few words>"` and open the link it prints in the same tab (only the part after `#` changes, so the page updates in place). After the user confirms a step that can't be checked from here (6, 7, 9, 10, 11, or choosing not to commit in 12), run `npm run setup:mark -- <step>` first. `npm run setup:status` shows what's left.
 - **Go in order.** Finish and verify each step before the next. If a command fails, read the error, fix the cause, and run it again — don't skip ahead.
 - **Stop at every USER STEP.** Tell the user exactly what to do, in plain language with the exact clicks or command, then wait for them to say they're done.
 - **Never ask for secrets in chat.** Keys and passwords go straight into `.env.local` (typed by the user in a text editor) or into a terminal prompt. Never print, read aloud, or commit `.env.local`. To check it, run `npm run check:env`, which reports problems without showing values.
@@ -220,7 +230,7 @@ Optional, and not part of this run. Tell the user that when they want the app li
 
 ## Resuming
 
-When asked to continue, don't trust memory of an earlier chat — check the project, then start at the **first step whose check fails**. Read only what's listed; never print `.env.local`.
+When asked to continue, don't trust memory of an earlier chat — check the project, then start at the **first step whose check fails**. `npm run setup:status` runs every automatic check below and shows which user-confirmed steps are marked; still check yourself for anything it can't see. Read only what's listed; never print `.env.local`.
 
 | Step | Done when |
 |---|---|

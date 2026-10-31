@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+# Setup guide
+
+At the start of every session, run `npm run setup:status`. If setup isn't complete, open the live setup guide (the link it prints) for the user before anything else (Claude desktop app: `preview_start` with that `url`, which shows it in the browser pane beside the chat; elsewhere: give them the link), tell them in a line which step they're on and how far along they are, and offer to continue. While doing setup, refresh the guide after each step with `npm run -s setup:url`. Details: "The live guide" in [docs/SETUP.md](docs/SETUP.md).
+
 # Docs
 
 All project documentation lives in [docs/](docs/DOCS.md) — start there.
