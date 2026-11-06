@@ -8,7 +8,7 @@ it by pasting:
 
 If setup stopped partway (the chat was closed, the app restarted, something failed), the user restarts it with:
 
-> Continue setting up this project: read docs/SETUP.md, work out from the project's current state which step we're on, tell me, and continue from there. Stop and wait for me at every USER STEP.
+> Continue setting up this project: read docs/SETUP.md, run npm run setup:status to see what's already done, and open the live setup guide beside this chat. Tell me which step we're on, then carry on from there. Stop and wait for me at every USER STEP.
 
 ## The live guide
 
@@ -80,7 +80,7 @@ If `.env.local` doesn't exist, copy `.env.example` to `.env.local` (PowerShell: 
 **USER STEP — fill in `.env.local`.** Tell the user:
 
 1. Open their project in the Supabase dashboard (https://supabase.com/dashboard). If they don't have one yet: **New project**, pick a name, a strong database password (have them save it in a password manager — the app doesn't need it, but Supabase support and direct database tools do) and the region closest to their users.
-2. Open `.env.local` (in the project folder) with a text editor — Notepad on Windows, TextEdit on macOS — and paste in:
+2. Open `.env.local` (in the project folder) with a text editor and paste in the values below. Suggest **VS Code** (free, https://code.visualstudio.com; **File → Open Folder…** on the project, then click `.env.local`), since it shows dot-files that Finder and Explorer hide; Notepad on Windows or TextEdit on macOS also work. The live guide's step 4 has drawings of where each value is in the dashboard.
    - `SUPABASE_URL` — click **Connect** at the top of the project (or **Integrations → Data API → API URL**); it looks like `https://<ref>.supabase.co`.
    - `SUPABASE_PUBLISHABLE_KEY` — **Project Settings → API Keys → Publishable key**.
    - `SUPABASE_SECRET_KEY` — same page, **Secret keys** (click reveal). This one bypasses all security rules: never share it.
